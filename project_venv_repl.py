@@ -9,19 +9,16 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
     from the current file's location.
     """
 
-    def run(self, edit, interactive=False, name=" "):
+    def run(self, edit, interactive=False, name="python"):
         window = self.view.window()
         for view in window.views():
             if view.is_dirty() and view.file_name():
                 view.run_command("save")
 
         python_path = self.get_venv_python(self.view.file_name())
-        print(f"Using Python interpreter: {python_path}")
 
         if interactive is False:
-            path, filename = os.path.split(self.view.file_name())
-            open_file = path + "/" + filename
-            cmd_list = [python_path, "-u", open_file]
+            cmd_list = [python_path, "-u", self.view.file_name()]
         else:
             cmd_list = [python_path, "-u", "-i"]
 
@@ -33,11 +30,14 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
 
         dir_path = os.path.dirname(start_path)
 
-        while dir_path != os.path.dirname(dir_path):
+        while True:
             candidate = os.path.join(dir_path, ".venv", "bin", "python")
             if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                 return candidate
-            dir_path = os.path.dirname(dir_path)
+            parent = os.path.dirname(dir_path)
+            if parent == dir_path:
+                break
+            dir_path = parent
 
         return "/usr/bin/python3"
 

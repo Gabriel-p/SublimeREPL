@@ -8,7 +8,7 @@
             "id": "SublimeREPL",
             "children":
             [
-                {"caption": "Project Venv REPL - Run Current File", "command": "project_venv_repl"},
+                {"caption": "Project Venv REPL - Run Current File", "command": "project_venv_repl", "args": {"name": "python"}},
                 {"caption": "Project Venv REPL - Interactive", "command": "project_venv_repl", "args": {"interactive": true, "name": "python"}},
                 { "caption": "-" }
             ]

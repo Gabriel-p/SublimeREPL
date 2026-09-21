@@ -30,6 +30,9 @@ Use `Tools | SublimeREPL` or the command palette entries prefixed with
 * `Project Venv REPL - Run Current File`
 * `Project Venv REPL - Interactive`
 
+Both entries call the `project_venv_repl` command; the interactive variant
+passes `{"interactive": true, "name": "python"}`.
+
 Keybindings
 -----------
 
