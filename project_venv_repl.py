@@ -11,19 +11,21 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
 
     def run(self, edit, interactive=False, name="python"):
         window = self.view.window()
-        for view in window.views():
-            if view.is_dirty() and view.file_name():
-                view.run_command("save")
+        if window is None:
+            return
 
         file_name = self.view.file_name()
+        if interactive is False and self.view.is_dirty() and file_name:
+            self.view.run_command("save")
+
         python_path = self.get_venv_python(file_name)
 
         if interactive is False and file_name:
-            cmd_list = [python_path, "-u", file_name]
+            cmd_list = [python_path, "-u", os.path.basename(file_name)]
         else:
             cmd_list = [python_path, "-u", "-i"]
 
-        self.repl_open(cmd_list=cmd_list, name=name, file_name=file_name)
+        self.repl_open(window=window, cmd_list=cmd_list, name=name, file_name=file_name)
 
     def get_venv_python(self, start_path):
         if not start_path:
@@ -42,8 +44,8 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
 
         return "/usr/bin/python3"
 
-    def repl_open(self, cmd_list, name, file_name):
-        self.view.window().run_command(
+    def repl_open(self, window, cmd_list, name, file_name):
+        window.run_command(
             "repl_open",
             {
                 "encoding": "utf8",

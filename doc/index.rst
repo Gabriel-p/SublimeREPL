@@ -50,7 +50,7 @@ ProjectVenvReplCommand
 
 ``project_venv_repl.py`` provides a single ``TextCommand`` that:
 
-* saves dirty files in the window
+* saves the current file before the non-interactive run-current-file workflow
 * walks upward from the current file looking for ``.venv/bin/python``
 * falls back to ``/usr/bin/python3``
 * opens the REPL through ``window.run_command("repl_open", ...)``
