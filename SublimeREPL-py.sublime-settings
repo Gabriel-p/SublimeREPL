@@ -1,7 +1,7 @@
 {
 	// default_extend_env are used to augment any environment variables
 	// that should be visible for all subprocess repls launched within
-	// SublimeREPL. This is a very good place to add PATH extension
+	// SublimeREPL-py. This is a very good place to add PATH extension
 	// once "PATH": "{PATH}:/home/username/mylocalinstalls/bin" or whatever
 	"default_extend_env": {},
 
@@ -15,7 +15,7 @@
 	// a new group if it isn't open.
 	"open_repl_in_group": true,
 
-	// By default SublimeREPL leaves REPL view open once the underlying subprocess
+	// By default SublimeREPL-py leaves REPL view open once the underlying subprocess
 	// dies or closes connection. This is useful when the process dies for an unexpected
 	// reason as it allows you to inspect it output. If you want. Setting this
 	// to true will cause SublimreREPL to close view once the process died.

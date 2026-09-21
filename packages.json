@@ -2,8 +2,8 @@
     "schema_version": "1.0.0",
     "packages": [
         {
-            "name": "SublimeREPL",
-            "details": "https://github.com/Gabriel-p/SublimeREPL",
+            "name": "SublimeREPL-py",
+            "details": "https://github.com/Gabriel-p/sublimeREPL-py",
             "description": "Subprocess REPL with Python support.",
             "releases": [
                 {
