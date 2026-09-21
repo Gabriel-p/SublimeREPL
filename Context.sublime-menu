@@ -1,5 +1,0 @@
-[
-	{"caption": "-"},
-    {"command": "repl_kill", "caption": "Kill"},
-	{"command": "repl_restart", "caption": "Restart"}
-]

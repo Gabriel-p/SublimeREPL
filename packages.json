@@ -1,14 +1,16 @@
 {
-    "schema_version": "3.0.0",
-    "packages": [{
-        "name": "SublimeREPL",
-        "details": "https://github.com/Gabriel-p/SublimeREPL",
-        "description": "SublimeREPL - trimmed subprocess REPL support for the ProjectVenvReplCommand Sublime Text workflow.",
-        "releases": [
-            {
-                "sublime_text": "*",
-                "tags": true
-            }
-        ]
-    }]
+    "schema_version": "1.0.0",
+    "packages": [
+        {
+            "name": "SublimeREPL",
+            "details": "https://github.com/Gabriel-p/SublimeREPL",
+            "description": "Subprocess REPL with Python support.",
+            "releases": [
+                {
+                    "sublime_text": "*",
+                    "tags": true
+                }
+            ]
+        }
+    ]
 }
