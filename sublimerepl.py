@@ -25,7 +25,7 @@ PY2 = False
 #     unicode_type = unicode
 #     PY2 = True
 
-SETTINGS_FILE = "SublimeREPL.sublime-settings"
+SETTINGS_FILE = "SublimeREPL-py.sublime-settings"
 # SUBLIME2 = sublime.version() < "3000"
 
 RESTART_MSG = """
@@ -190,10 +190,6 @@ class ReplView:
         # begin refreshing attached view
         self.update_view_loop()
 
-    @property
-    def external_id(self):
-        return self.repl.external_id
-
     def on_backspace(self):
         if self.delta < 0:
             self._view.run_command("left_delete")
@@ -201,11 +197,6 @@ class ReplView:
     def on_ctrl_backspace(self):
         if self.delta < 0:
             self._view.run_command("delete_word", {"forward": False, "sub_words": True})
-
-    def on_super_backspace(self):
-        if self.delta < 0:
-            for i in range(abs(self.delta)):
-                self._view.run_command("left_delete")  # Hack to delete to BOL
 
     def on_left(self):
         if self.delta != 0:
@@ -321,14 +312,6 @@ class ReplView:
         self.write(unistr)
         self._prompt_size = len(unistr)
 
-    def append_input_text(self, text, edit=None):
-        if edit:
-            self._view.insert(edit, self._view.size(), text)
-        else:
-            self._view.run_command(
-                "repl_insert_text", {"pos": self._view.size(), "text": text}
-            )
-
     def handle_repl_output(self):
         """Returns new data from Repl and bool indicating if Repl is still
         working"""
@@ -362,7 +345,7 @@ class ReplView:
                         sublime.DRAW_EMPTY | sublime.DRAW_OUTLINED,
                     )
                 else:
-                    print("SublimeREPL: unknown REPL opcode: " + opcode)
+                    print("SublimeREPL-py: unknown REPL opcode: " + opcode)
         else:
             self.write(packet)
 
@@ -401,12 +384,6 @@ class ReplView:
             self._view.replace(edit, self.input_region, cmd)
             self._view.sel().clear()
             self._view.sel().add(sublime.Region(self._view.size()))
-
-    def run(self, edit, code):
-        self.replace_current_input(edit, code)
-        self.enter()
-        self._view.show(self.input_region)
-        self._window.focus_view(self._view)
 
     @property
     def view(self):
@@ -457,17 +434,6 @@ class ReplManager:
         rv = self.repl_views[repl_id]
         rv.update_view(view)
         return rv
-
-    def find_repl(self, external_id):
-        """Yields rvews matching external_id taken from source.[external_id] scope
-        Match is done on external_id value of repl and additional_scopes"""
-        for rv in self.repl_views.values():
-            if not (rv.repl and rv.repl.is_alive()):
-                continue  # dead repl, skip
-            rvid = rv.external_id
-            additional_scopes = rv.repl.additional_scopes
-            if rvid == external_id or external_id in additional_scopes:
-                yield rv
 
     def open(self, window, encoding, type, syntax=None, view_id=None, **kwds):
         repl_restart_args = {
@@ -639,16 +605,6 @@ class ReplEscapeCommand(sublime_plugin.TextCommand):
             rv.escape(edit)
 
 
-def repl_view_delta(sublime_view):
-    """Return a repl_view and number of characters from current selection
-    to then beggingin of user_input (otherwise known as _output_end)"""
-    rv = manager.repl_view(sublime_view)
-    if not rv:
-        return None, -1
-    delta = rv._output_end - sublime_view.sel()[0].begin()
-    return rv, delta
-
-
 class ReplBackspaceCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         rv = manager.repl_view(self.view)
@@ -661,13 +617,6 @@ class ReplCtrlBackspaceCommand(sublime_plugin.TextCommand):
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_ctrl_backspace()
-
-
-class ReplSuperBackspaceCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        rv = manager.repl_view(self.view)
-        if rv:
-            rv.on_super_backspace()
 
 
 class ReplLeftCommand(sublime_plugin.TextCommand):
@@ -712,20 +661,6 @@ class ReplViewNextCommand(sublime_plugin.TextCommand):
             rv.next_command(edit)
 
 
-class ReplKillCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        rv = manager.repl_view(self.view)
-        if rv:
-            rv.repl.kill()
-
-    def is_visible(self):
-        rv = manager.repl_view(self.view)
-        return bool(rv)
-
-    def is_enabled(self):
-        return self.is_visible()
-
-
 class SublimeReplListener(sublime_plugin.EventListener):
     def on_selection_modified(self, view):
         rv = manager.repl_view(view)
@@ -753,45 +688,3 @@ class SublimeReplListener(sublime_plugin.EventListener):
                 return "repl_pass", {}
 
         return None
-
-
-class SubprocessReplSendSignal(sublime_plugin.TextCommand):
-    def run(self, edit, signal=None):
-        rv = manager.repl_view(self.view)
-        subrepl = rv.repl
-        signals = subrepl.available_signals()
-        sorted_names = sorted(signals.keys())
-        if signal in signals:
-            # signal given by name
-            self.safe_send_signal(subrepl, signals[signal])
-            return
-        if signal in list(signals.values()):
-            # signal given by code (correct one!)
-            self.safe_send_signal(subrepl, signal)
-            return
-
-        # no or incorrect signal given
-        def signal_selected(num):
-            if num == -1:
-                return
-            signame = sorted_names[num]
-            sigcode = signals[signame]
-            self.safe_send_signal(subrepl, sigcode)
-
-        self.view.window().show_quick_panel(sorted_names, signal_selected)
-
-    def safe_send_signal(self, subrepl, sigcode):
-        try:
-            subrepl.send_signal(sigcode)
-        except Exception as e:
-            sublime.error_message(str(e))
-
-    def is_visible(self):
-        rv = manager.repl_view(self.view)
-        return bool(rv) and hasattr(rv.repl, "send_signal")
-
-    def is_enabled(self):
-        return self.is_visible()
-
-    def description(self):
-        return "Send SIGNAL"

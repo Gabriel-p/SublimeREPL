@@ -44,12 +44,6 @@ class Repl(object):
         self.additional_scopes = additional_scopes or []
         self.apiv2 = apiv2
 
-    def autocomplete_available(self):
-        return False
-
-    def autocomplete_completions(self, whole_line, pos_in_line, prefix, whole_prefix, locations):
-        raise NotImplementedError
-
     def allow_restarts(self):
         """Override if for some reason restart logic should not be
            used for this REPL"""

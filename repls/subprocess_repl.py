@@ -40,7 +40,7 @@ class SubprocessRepl(Repl):
         **kwds,
     ):
         super().__init__(encoding, **kwds)
-        settings = load_settings("SublimeREPL.sublime-settings")
+        settings = load_settings("SublimeREPL-py.sublime-settings")
 
         if cmd[0] == "[unsupported]":
             raise Unsupported(cmd[1:])
@@ -93,7 +93,7 @@ class SubprocessRepl(Repl):
 
                 traceback.print_exc()
                 error_message(
-                    "SublimeREPL: obtaining sane environment failed in getenv()\n"
+                    "SublimeREPL-py: obtaining sane environment failed in getenv()\n"
                     "Check console and 'getenv_command' setting \n"
                     "WARN: Falling back to SublimeText environment"
                 )
@@ -159,17 +159,3 @@ class SubprocessRepl(Repl):
         except OSError:
             pass
         self.popen.kill()
-
-    def available_signals(self):
-        signals = {}
-        for k, v in list(signal.__dict__.items()):
-            if not k.startswith("SIG"):
-                continue
-            signals[k] = v
-        return signals
-
-    def send_signal(self, sig):
-        if sig == signal.SIGTERM:
-            self._killed = True
-        if self.is_alive():
-            os.killpg(self.popen.pid, sig)

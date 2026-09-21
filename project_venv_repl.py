@@ -5,7 +5,7 @@ import sublime_plugin
 
 class ProjectVenvReplCommand(sublime_plugin.TextCommand):
     """
-    Starts a SublimeREPL, searching upward for a .venv/bin/python interpreter
+    Starts a SublimeREPL-py session, searching upward for a .venv/bin/python interpreter
     from the current file's location.
     """
 
