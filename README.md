@@ -7,9 +7,10 @@ subprocess REPL support needed by `ProjectVenvReplCommand`.
 Features
 --------
 
-* Launch an interactive Python REPL inside Sublime Text.
 * Run the current Python file with the nearest `.venv/bin/python`, falling back
   to `/usr/bin/python3`.
+* Launch a plain interactive `python -u -i` REPL inside Sublime Text with the
+  same interpreter lookup.
 * Keep the core `repl_open` and generic `subprocess` backend needed to host the
   REPL in a Sublime Text view.
 
@@ -31,7 +32,8 @@ Use `Tools | SublimeREPL` or the command palette entries prefixed with
 * `Project Venv REPL - Interactive`
 
 Both entries call the `project_venv_repl` command; the interactive variant
-passes `{"interactive": true, "name": "python"}`.
+passes `{"interactive": true, "name": "python"}` and starts a plain REPL,
+while the non-interactive entry runs the current file.
 
 Keybindings
 -----------
