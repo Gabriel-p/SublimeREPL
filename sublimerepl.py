@@ -17,13 +17,6 @@ import sublime_plugin
 from . import repls
 
 unicode_type = str
-PY2 = False
-# except ImportError:
-#     import Queue as queue
-#     import repls
-
-#     unicode_type = unicode
-#     PY2 = True
 
 SETTINGS_FILE = "SublimeREPL-py.sublime-settings"
 # SUBLIME2 = sublime.version() < "3000"
@@ -495,8 +488,8 @@ class ReplManager:
             subst = ReplManager._subst_for_translate(window)
         if isinstance(obj, dict):
             return ReplManager._translate_dict(window, obj, subst)
-        if isinstance(obj, unicode_type):  # PY2
-            return ReplManager._translate_string(window, obj, subst)
+        # if isinstance(obj, unicode_type):  # PY2
+        #     return ReplManager._translate_string(window, obj, subst)
         if isinstance(obj, list):
             return ReplManager._translate_list(window, obj, subst)
         return obj
@@ -533,10 +526,10 @@ class ReplManager:
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
 
-        # Older Python runtimes can choke on dict(unicode -> unicode) as
-        # **kwargs, so normalize keys to str when needed.
-        if PY2:
-            subst = dict((str(key), val) for key, val in subst.items())
+        # # Older Python runtimes can choke on dict(unicode -> unicode) as
+        # # **kwargs, so normalize keys to str when needed.
+        # if PY2:
+        #     subst = dict((str(key), val) for key, val in subst.items())
 
         return Template(string).safe_substitute(**subst)
 

@@ -1,52 +1,56 @@
 [
     {
         "id": "tools",
-        "children":
-        [{
-            "caption": "SublimeREPL-py",
-            "mnemonic": "R",
-            "id": "SublimeREPL-py",
-            "children":
-            [
-                {"caption": "Project Venv REPL - Run Current File", "command": "project_venv_repl", "args": {"name": "python"}},
-                {"caption": "Project Venv REPL - Interactive", "command": "project_venv_repl", "args": {"interactive": true, "name": "python"}},
-                { "caption": "-" }
-            ]
-        }]
+        "children": [
+            {
+                "caption": "SublimeREPL-py",
+                "mnemonic": "R",
+                "id": "SublimeREPL-py",
+                "children": [
+                    {
+                        "caption": "Run Current File",
+                        "command": "project_venv_repl",
+                        "args": {
+                            "name": "python"
+                        }
+                    },
+                    {
+                        "caption": "Interactive",
+                        "command": "project_venv_repl",
+                        "args": {
+                            "interactive": true,
+                            "name": "python"
+                        }
+                    },
+                    {
+                        "caption": "-"
+                    }
+                ]
+            }
+        ]
     },
-
     {
         "caption": "Preferences",
         "mnemonic": "n",
         "id": "preferences",
-        "children":
-        [
+        "children": [
             {
                 "caption": "Package Settings",
                 "mnemonic": "P",
                 "id": "package-settings",
-                "children":
-                [
+                "children": [
                     {
                         "caption": "SublimeREPL-py",
-                        "children":
-                        [
+                        "children": [
                             {
-                                "command": "open_file", "args":
-                                {
-                                    "file": "${packages}/SublimeREPL-py/SublimeREPL-py.sublime-settings"
-                                },
-                                "caption": "Settings – Default"
+                                "caption": "Settings",
+                                "command": "edit_settings",
+                                "args": {
+                                    "base_file": "${packages}/sublimeREPL-py/SublimeREPL-py.sublime-settings"
+                                }
                             },
-                            {
-                                "command": "open_file", "args":
-                                {
-                                    "file": "${packages}/User/SublimeREPL-py.sublime-settings"
-                                },
-                                "caption": "Settings – User"
-                            },
-                            { "caption": "-" }
-                        ]
+                        ],
+                        "id": "sublimereplpy"
                     }
                 ]
             }
