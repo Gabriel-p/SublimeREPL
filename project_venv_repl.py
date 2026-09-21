@@ -15,14 +15,15 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
             if view.is_dirty() and view.file_name():
                 view.run_command("save")
 
-        python_path = self.get_venv_python(self.view.file_name())
+        file_name = self.view.file_name()
+        python_path = self.get_venv_python(file_name)
 
-        if interactive is False:
-            cmd_list = [python_path, "-u", self.view.file_name()]
+        if interactive is False and file_name:
+            cmd_list = [python_path, "-u", file_name]
         else:
             cmd_list = [python_path, "-u", "-i"]
 
-        self.repl_open(cmd_list=cmd_list, name=name)
+        self.repl_open(cmd_list=cmd_list, name=name, file_name=file_name)
 
     def get_venv_python(self, start_path):
         if not start_path:
@@ -41,14 +42,14 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
 
         return "/usr/bin/python3"
 
-    def repl_open(self, cmd_list, name):
+    def repl_open(self, cmd_list, name, file_name):
         self.view.window().run_command(
             "repl_open",
             {
                 "encoding": "utf8",
                 "type": "subprocess",
                 "cmd": cmd_list,
-                "cwd": "$file_path",
+                "cwd": os.path.dirname(file_name) if file_name else os.path.expanduser("~"),
                 "syntax": "Packages/Python/Python.sublime-syntax",
                 "external_id": name,
             },
