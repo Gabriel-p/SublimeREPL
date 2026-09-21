@@ -1,5 +1,15 @@
 [
     {
+        "caption": "SublimeREPL: Project Venv REPL - Run Current File",
+        "command": "project_venv_repl",
+        "args": {"name": "python"}
+    },
+    {
+        "caption": "SublimeREPL: Project Venv REPL - Interactive",
+        "command": "project_venv_repl",
+        "args": {"interactive": true, "name": "python"}
+    },
+    {
         "caption": "SublimeREPL: Restart REPL",
         "command": "repl_restart"
     }

@@ -15,10 +15,6 @@
 	// a new group if it isn't open.
 	"open_repl_in_group": true,
 
-	// Persistent history is stored per REPL external_id, it means that all python
-	// REPLS will share history. If you wish you can disable history altogether
-	"persistent_history_enabled": true,
-
 	// By default SublimeREPL leaves REPL view open once the underlying subprocess
 	// dies or closes connection. This is useful when the process dies for an unexpected
 	// reason as it allows you to inspect it output. If you want. Setting this
@@ -36,12 +32,6 @@
 	// enable this option to filter them out.
 	"filter_ascii_color_codes": true,
 
-	// Where to look for python virtualenvs
-	"python_virtualenv_paths": [
-		"~/.virtualenvs",  // virtualenvwrapper
-		"~/.venv"  // venv.bash https://github.com/wuub/venv
-	],
-
 	// Use arrows for history navigation instead of Alt+[P|N]/Ctrl+[P|N]
 	"history_arrows": true,
 
@@ -57,25 +47,5 @@
 		"auto_complete": true,
 		"line_numbers": false,
 		"gutter": false
-	},
-
-	// this settings exposes additional variables in repl config files, especially
-	// those related to sublime projects that are not available through standard API
-	// WARNING: this will switch your build system back to Automatic each time a REPL
-	// is started so beware!
-	"use_build_system_hack": false,
-
-	// IP address used to setup autocomplete server in sublimerepl.
-	// changing this is usefull when you want to exclude one address
-	// from proxychains/tsocks routing
-	"autocomplete_server_ip": "127.0.0.1",
-
-	// If set to true, SublimeREPL will try to append evaluated code to repl
-	// output before evaluation (e.g. Ctrl+, f)
-	"show_transferred_text": false,
-
-	// If set to true repl view (tab) that receives text for evaluation will
-	// be brought to front after text transfer. Note: This will not fire if repl view
-	// is in the same tab group as the view from which the code is sent.
-	"focus_view_on_transfer": true
+	}
 }
