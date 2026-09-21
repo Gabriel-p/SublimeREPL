@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2011, Wojciech Bederski (wuub.net)
 # All rights reserved.
 # See LICENSE.txt for details.
-from __future__ import absolute_import, unicode_literals, print_function, division
 
-import subprocess
 import os
-import sys
 import signal
+import subprocess
+import sys
+
+from sublime import error_message, load_settings
+
 from .repl import Repl
-from sublime import load_settings, error_message
 
 PY3 = sys.version_info[0] == 3
 
@@ -19,18 +19,28 @@ import select
 
 class Unsupported(Exception):
     def __init__(self, msgs):
-        super(Unsupported, self).__init__()
+        super().__init__()
         self.msgs = msgs
 
     def __repr__(self):
         return "\n".join(self.msgs)
 
+
 class SubprocessRepl(Repl):
     TYPE = "subprocess"
 
-    def __init__(self, encoding, cmd=None, env=None, cwd=None, extend_env=None, soft_quit="", **kwds):
-        super(SubprocessRepl, self).__init__(encoding, **kwds)
-        settings = load_settings('SublimeREPL.sublime-settings')
+    def __init__(
+        self,
+        encoding,
+        cmd=None,
+        env=None,
+        cwd=None,
+        extend_env=None,
+        soft_quit="",
+        **kwds,
+    ):
+        super().__init__(encoding, **kwds)
+        settings = load_settings("SublimeREPL.sublime-settings")
 
         if cmd[0] == "[unsupported]":
             raise Unsupported(cmd[1:])
@@ -47,14 +57,15 @@ class SubprocessRepl(Repl):
         self._soft_quit = soft_quit
         self._killed = False
         self.popen = subprocess.Popen(
-                        self._cmd,
-                        bufsize=1,
-                        preexec_fn=os.setsid,
-                        cwd=self.cwd(cwd, settings),
-                        env=env,
-                        stderr=subprocess.STDOUT,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE)
+            self._cmd,
+            bufsize=1,
+            preexec_fn=os.setsid,
+            cwd=self.cwd(cwd, settings),
+            env=env,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
 
         flags = fcntl.fcntl(self.popen.stdout, fcntl.F_GETFL)
         fcntl.fcntl(self.popen.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -75,15 +86,17 @@ class SubprocessRepl(Repl):
             try:
                 output = subprocess.check_output(getenv_command)
                 lines = output.decode("utf-8", errors="replace").splitlines()
-                env = dict(line.split('=', 1)  for line in lines)
+                env = dict(line.split("=", 1) for line in lines)
                 return env
             except:
                 import traceback
+
                 traceback.print_exc()
                 error_message(
                     "SublimeREPL: obtaining sane environment failed in getenv()\n"
                     "Check console and 'getenv_command' setting \n"
-                    "WARN: Falling back to SublimeText environment")
+                    "WARN: Falling back to SublimeText environment"
+                )
 
         return os.environ.copy()
 
@@ -91,7 +104,9 @@ class SubprocessRepl(Repl):
         updated_env = env if env else self.getenv(settings)
         default_extend_env = settings.get("default_extend_env")
         if default_extend_env:
-            updated_env.update(self.interpolate_extend_env(updated_env, default_extend_env))
+            updated_env.update(
+                self.interpolate_extend_env(updated_env, default_extend_env)
+            )
         if extend_env:
             updated_env.update(self.interpolate_extend_env(updated_env, extend_env))
 
@@ -101,14 +116,14 @@ class SubprocessRepl(Repl):
                 enc_k = self.encoder(str(k))[0]
                 enc_v = self.encoder(str(v))[0]
             except UnicodeDecodeError:
-                continue #f*** it, we'll do it live
+                continue  # f*** it, we'll do it live
             else:
                 bytes_env[enc_k] = enc_v
         return bytes_env
 
     def interpolate_extend_env(self, env, extend_env):
         """Interpolates (subst) values in extend_env.
-           Mostly for path manipulation"""
+        Mostly for path manipulation"""
         new_env = {}
         for key, val in list(extend_env.items()):
             new_env[key] = str(val).format(**env)
@@ -130,8 +145,6 @@ class SubprocessRepl(Repl):
             i, _, _ = select.select([out], [], [])
             if i:
                 return out.read(4096)
-
-
 
     def write_bytes(self, bytes):
         si = self.popen.stdin
