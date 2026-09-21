@@ -3,7 +3,7 @@ import os
 import sublime_plugin
 
 
-class ProjectVenvReplCommand(sublime_plugin.TextCommand):
+class RunPythonReplCommand(sublime_plugin.TextCommand):
     """
     Starts a SublimeREPL-py session, searching upward for a .venv/bin/python interpreter
     from the current file's location.
@@ -49,7 +49,9 @@ class ProjectVenvReplCommand(sublime_plugin.TextCommand):
                 "encoding": "utf8",
                 "type": "subprocess",
                 "cmd": cmd_list,
-                "cwd": os.path.dirname(file_name) if file_name else os.path.expanduser("~"),
+                "cwd": os.path.dirname(file_name)
+                if file_name
+                else os.path.expanduser("~"),
                 "syntax": "Packages/Python/Python.sublime-syntax",
                 "external_id": name,
             },

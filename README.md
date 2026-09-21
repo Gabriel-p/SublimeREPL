@@ -6,6 +6,25 @@ This package keeps only the Python-specific REPL path that starts in
 and runs a `SubprocessRepl` backend from `repls/subprocess_repl.py`.
 
 
+```
+ProjectVenvReplCommand.run()
+ ├── get_venv_python()          [used]
+ ├── repl_open()                [used]
+ │     └── view.window().run_command("repl_open", {...})   → dispatches into ReplOpenCommand
+ └── (via Sublime Text's command dispatch, NOT a direct Python call)
+       ReplOpenCommand.run()
+        └── manager.open()  (ReplManager instance)
+             ├── ReplManager.translate() / _subst_for_translate() / _translate_dict/_list/_string (kwds have no templated strings here, but translate() is always invoked)
+             ├── repls.Repl.subclass("subprocess")   → resolves to SubprocessRepl
+             ├── SubprocessRepl.__init__() 
+             │     ├── env(), getenv(), interpolate_extend_env(), cmd(), cwd()
+             ├── ReplView.__init__()
+             │     ├── ReplReader (thread) .start()/.run()
+             │     ├── update_view_loop() → handle_repl_output() → handle_repl_packet() → write()/write_prompt()
+             └── ReplManager._delete_repl (registered as close callback)
+```
+
+
 File: `project_venv_repl.py`
 ----------------------------
 
