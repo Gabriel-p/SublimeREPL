@@ -4,29 +4,22 @@
 SublimeREPL
 ===========
 
-SublimeREPL is a Linux-only Sublime Text plugin focused on running Python inside
-a normal editor tab. It supports launching an interactive Python REPL, IPython,
-virtualenv-backed Python sessions, running the current file, and debugging the
-current file with PDB.
+SublimeREPL is a trimmed Sublime Text plugin focused on the
+``ProjectVenvReplCommand`` workflow: opening a subprocess-backed Python REPL in
+an editor tab by locating ``.venv/bin/python`` from the current file and
+falling back to ``/usr/bin/python3``.
 
 Quick Start
 -----------
 
-Launch Python from either:
+Launch the remaining workflow from either:
 
-* ``Tools > SublimeREPL > Python``
-* the command palette entries prefixed with ``SublimeREPL: Python``
+* ``Tools > SublimeREPL > Project Venv REPL - Run Current File``
+* ``Tools > SublimeREPL > Project Venv REPL - Interactive``
+* the command palette entries prefixed with ``SublimeREPL: Project Venv REPL``
 
-The bundled Python integration provides these entry points:
-
-* Python
-* Python - virtualenv
-* Python - PDB current file
-* Python - RUN current file
-* Python - IPython
-
-Once a Python REPL is open, you can send source text from a Python buffer to
-that REPL for execution or transfer.
+Once a REPL is open, the remaining package functionality is the generic REPL
+view and subprocess backend required to host that session.
 
 Keyboard shortcuts
 ------------------
@@ -51,39 +44,21 @@ REPL keys
 +---------------+----------------------------------+-------------------------------------------------+
 | Ctrl+l        | repl_clear                       | Clear REPL screen                               |
 +---------------+----------------------------------+-------------------------------------------------+
-| Shift+Ctrl+c  | subprocess_repl_send_signal      | Send SIGINT to REPL                             |
-+---------------+----------------------------------+-------------------------------------------------+
 
-Source buffer keys
-^^^^^^^^^^^^^^^^^^
+ProjectVenvReplCommand
+----------------------
 
-+---------------+----------------------------------------------------+
-| Key           | Meaning                                            |
-+===============+====================================================+
-| Ctrl+, b      | Send the current bracket-selected block to REPL    |
-+---------------+----------------------------------------------------+
-| Ctrl+, s      | Send the selection to REPL                         |
-+---------------+----------------------------------------------------+
-| Ctrl+, f      | Send the current file to REPL                      |
-+---------------+----------------------------------------------------+
-| Ctrl+, l      | Send the current line to REPL                      |
-+---------------+----------------------------------------------------+
+``project_venv_repl.py`` provides a single ``TextCommand`` that:
 
-Python features
----------------
-
-The Python integration keeps support for:
-
-* standard interactive Python subprocesses
-* local virtualenv discovery via ``python_virtualenv_paths``
-* IPython via ``config/Python/ipy_repl.py``
-* launching the current file with ``python -u``
-* launching the current file under ``python -m pdb``
-* persistent command history and text transfer
+* saves dirty files in the window
+* walks upward from the current file looking for ``.venv/bin/python``
+* falls back to ``/usr/bin/python3``
+* opens the REPL through ``window.run_command("repl_open", ...)``
+* runs either the current file or an interactive ``python -u -i`` session
 
 Configuration
 -------------
 
-The default ``SublimeREPL.sublime-settings`` file documents the supported
-options for Python workflows, including environment extension, virtualenv
-search paths, history handling, and REPL view behavior.
+The default ``SublimeREPL.sublime-settings`` file documents the remaining
+subprocess REPL options, including environment extension, REPL view behavior,
+and history navigation keys.

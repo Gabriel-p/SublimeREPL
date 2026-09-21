@@ -1,16 +1,13 @@
 Welcome to SublimeREPL
 ======================
 
-This fork of SublimeREPL is focused on Linux-only Python workflows.
+This fork of SublimeREPL is focused on the ProjectVenvRepl Python workflow.
 
 Included functionality:
  - interactive Python REPL sessions
- - running the current Python file
- - launching PDB for the current Python file
- - IPython integration through config/Python/ipy_repl.py
- - local virtualenv discovery via python_virtualenv_paths
- - REPL history, restart, and text transfer support
+ - running the current Python file through ProjectVenvReplCommand
+ - the core subprocess-backed REPL view, restart, and history navigation support
 
 Removed functionality:
- - non-Python language integrations and their menu/command registrations
- - non-Python helper scripts and custom REPL classes
+ - config-driven Python/IPython/virtualenv launchers
+ - text transfer, autocomplete, build-system hacks, and other unused helpers

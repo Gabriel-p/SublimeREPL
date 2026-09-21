@@ -10,7 +10,6 @@ import sys
 import signal
 from .repl import Repl
 from sublime import load_settings, error_message
-from .autocomplete_server import AutocompleteServer
 
 PY3 = sys.version_info[0] == 3
 
@@ -29,21 +28,14 @@ class Unsupported(Exception):
 class SubprocessRepl(Repl):
     TYPE = "subprocess"
 
-    def __init__(self, encoding, cmd=None, env=None, cwd=None, extend_env=None, soft_quit="", autocomplete_server=False, **kwds):
+    def __init__(self, encoding, cmd=None, env=None, cwd=None, extend_env=None, soft_quit="", **kwds):
         super(SubprocessRepl, self).__init__(encoding, **kwds)
         settings = load_settings('SublimeREPL.sublime-settings')
 
         if cmd[0] == "[unsupported]":
             raise Unsupported(cmd[1:])
 
-        self._autocomplete_server = None
-        if autocomplete_server:
-            self._autocomplete_server = AutocompleteServer(self, settings.get("autocomplete_server_ip"))
-            self._autocomplete_server.start()
-
         env = self.env(env, extend_env, settings)
-        env[b"SUBLIMEREPL_AC_PORT"] = str(self.autocomplete_server_port()).encode("utf-8")
-        env[b"SUBLIMEREPL_AC_IP"] = settings.get("autocomplete_server_ip").encode("utf-8")
 
         if PY3:
             strings_env = {}
@@ -66,25 +58,6 @@ class SubprocessRepl(Repl):
 
         flags = fcntl.fcntl(self.popen.stdout, fcntl.F_GETFL)
         fcntl.fcntl(self.popen.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-    def autocomplete_server_port(self):
-        if not self._autocomplete_server:
-            return None
-        return self._autocomplete_server.port()
-
-    def autocomplete_available(self):
-        if not self._autocomplete_server:
-            return False
-        return self._autocomplete_server.connected()
-
-    def autocomplete_completions(self, whole_line, pos_in_line, prefix, whole_prefix, locations):
-        return self._autocomplete_server.complete(
-            whole_line=whole_line,
-            pos_in_line=pos_in_line,
-            prefix=prefix,
-            whole_prefix=whole_prefix,
-            locations=locations,
-        )
 
     def cmd(self, cmd, env):
         return cmd

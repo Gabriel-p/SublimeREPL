@@ -6,26 +6,20 @@ from __future__ import absolute_import, unicode_literals, print_function, divisi
 
 import re
 import os
-import sys
 import os.path
 import threading
 import traceback
-from datetime import datetime
 
 import sublime
 import sublime_plugin
 
 try:
     import queue
-    from . import sublimerepl_build_system_hack
     from . import repls
-    from .repllibs import PyDbLite
     unicode_type = str
     PY2 = False
 except ImportError:
-    import sublimerepl_build_system_hack
     import repls
-    from repllibs import PyDbLite
     import Queue as queue
     unicode_type = unicode
     PY2 = True
@@ -127,26 +121,6 @@ class MemHistory(History):
         return HistoryMatchList(command_prefix, matching_commands)
 
 
-class PersistentHistory(MemHistory):
-    def __init__(self, external_id):
-        super(PersistentHistory, self).__init__()
-        path = os.path.join(sublime.packages_path(), "User", ".SublimeREPLHistory")
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        filepath = os.path.join(path, external_id + ".db")
-        self._db = PyDbLite.Base(filepath)
-        self._external_id = external_id
-        self._db.create("external_id", "command", "ts", mode="open")
-
-    def append(self, cmd):
-        self._db.insert(external_id=self._external_id, command=cmd, ts=datetime.now())
-        self._db.commit()
-
-    def match(self, command_prefix):
-        retults = [cmd for cmd in self._db if cmd["command"].startswith(command_prefix)]
-        return HistoryMatchList(command_prefix, [x["command"] for x in retults])
-
-
 class ReplView(object):
     def __init__(self, view, repl, syntax, repl_restart_args):
         self.repl = repl
@@ -179,12 +153,7 @@ class ReplView(object):
 
         view.settings().set("history_arrows", settings.get("history_arrows", True))
 
-        # for hysterical rasins ;)
-        persistent_history_enabled = settings.get("persistent_history_enabled") or settings.get("presistent_history_enabled")
-        if self.external_id and persistent_history_enabled:
-            self._history = PersistentHistory(self.external_id)
-        else:
-            self._history = MemHistory()
+        self._history = MemHistory()
         self._history_match = None
 
         self._filter_color_codes = settings.get("filter_ascii_color_codes")
@@ -557,10 +526,6 @@ class ReplManager(object):
         res["file_basename"] = os.path.basename(filename)
         if 'folder' not in res:
             res["folder"] = res["file_path"]
-
-        if sublime.load_settings(SETTINGS_FILE).get("use_build_system_hack", False):
-            project_settings = sublimerepl_build_system_hack.get_project_settings(window)
-            res.update(project_settings)
 
         return res
 

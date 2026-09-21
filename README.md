@@ -1,19 +1,17 @@
 SublimeREPL for Sublime Text
 ===========================
 
-SublimeREPL is a Linux-only, Python-only fork of the Sublime Text package for
-working with a Python REPL inside an editor tab.
+SublimeREPL is a trimmed-down Sublime Text package that keeps only the
+subprocess REPL support needed by `ProjectVenvReplCommand`.
 
 Features
 --------
 
 * Launch an interactive Python REPL inside Sublime Text.
-* Run the current Python file.
-* Launch the current Python file under PDB.
-* Start IPython through the bundled `ipy_repl.py` helper.
-* Discover local virtualenvs from `python_virtualenv_paths`.
-* Send selections, lines, blocks, or entire files to the running Python REPL.
-* Keep persistent history per Python REPL.
+* Run the current Python file with the nearest `.venv/bin/python`, falling back
+  to `/usr/bin/python3`.
+* Keep the core `repl_open` and generic `subprocess` backend needed to host the
+  REPL in a Sublime Text view.
 
 Installation
 ============
@@ -26,31 +24,21 @@ Installation
 Usage
 =====
 
-Use `Tools | SublimeREPL | Python` or the command palette entries prefixed with
-`SublimeREPL: Python` to launch one of the supported Python workflows:
+Use `Tools | SublimeREPL` or the command palette entries prefixed with
+`SublimeREPL: Project Venv REPL` to launch one of the supported workflows:
 
-* `Python`
-* `Python - virtualenv`
-* `Python - PDB current file`
-* `Python - RUN current file`
-* `Python - IPython`
+* `Project Venv REPL - Run Current File`
+* `Project Venv REPL - Interactive`
 
 Keybindings
 -----------
 
-Evaluate in REPL:
+Inside an open REPL:
 
-* <kbd>ctrl+,</kbd>, <kbd>s</kbd> Selection
-* <kbd>ctrl+,</kbd>, <kbd>f</kbd> File
-* <kbd>ctrl+,</kbd>, <kbd>l</kbd> Lines
-* <kbd>ctrl+,</kbd>, <kbd>b</kbd> Block
-
-Transfer to REPL without evaluating:
-
-* <kbd>ctrl+shift+,</kbd>, <kbd>s</kbd> Selection
-* <kbd>ctrl+shift+,</kbd>, <kbd>f</kbd> File
-* <kbd>ctrl+shift+,</kbd>, <kbd>l</kbd> Lines
-* <kbd>ctrl+shift+,</kbd>, <kbd>b</kbd> Block
+* <kbd>up</kbd>/<kbd>down</kbd> browse command history
+* <kbd>enter</kbd> submits input
+* <kbd>escape</kbd> clears current input
+* <kbd>ctrl+l</kbd> clears the REPL view
 
 Configuration
 -------------
@@ -58,10 +46,9 @@ Configuration
 The default settings file documents the supported options, including:
 
 * `default_extend_env`
-* `python_virtualenv_paths`
 * `open_repl_in_group`
-* `show_transferred_text`
-* `focus_view_on_transfer`
+* `view_auto_close`
+* `history_arrows`
 
 License
 =======
