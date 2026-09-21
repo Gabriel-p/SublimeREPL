@@ -65,11 +65,7 @@
                         "type": "subprocess",
                         "encoding": "utf8",
                         "autocomplete_server": true,
-                        "cmd": {
-                            "osx": ["python", "-u", "${packages}/SublimeREPL/config/Python/ipy_repl.py"],
-                            "linux": ["python", "-u", "${packages}/SublimeREPL/config/Python/ipy_repl.py"],
-                            "windows": ["python", "-u", "${packages}/SublimeREPL/config/Python/ipy_repl.py"]
-                        },
+                        "cmd": ["python", "-u", "${packages}/SublimeREPL/config/Python/ipy_repl.py"],
                         "cwd": "$file_path",
                         "syntax": "Packages/Python/Python.tmLanguage",
                         "external_id": "python",

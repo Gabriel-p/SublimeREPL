@@ -13,7 +13,7 @@ class NoReplError(LookupError):
 
 class Repl(object):
     """Class that represents a process that is being executed.
-       For example this can be python, bash or a telnet session"""
+       For example this can be a Python subprocess session."""
 
     TYPE = "<base>"
 

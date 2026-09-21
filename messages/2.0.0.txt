@@ -1,7 +1,7 @@
 Welcome to SublimeREPL
 ======================
 
-This fork of SublimeREPL is focused on Python workflows.
+This fork of SublimeREPL is focused on Linux-only Python workflows.
 
 Included functionality:
  - interactive Python REPL sessions

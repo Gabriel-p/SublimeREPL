@@ -1,8 +1,8 @@
 SublimeREPL for Sublime Text
 ===========================
 
-SublimeREPL is a Python-focused Sublime Text package for working with a Python
-REPL inside an editor tab.
+SublimeREPL is a Linux-only, Python-only fork of the Sublime Text package for
+working with a Python REPL inside an editor tab.
 
 Features
 --------
@@ -21,7 +21,7 @@ Installation
 1. Install Package Control.
 2. Install `SublimeREPL`.
 3. Restart Sublime Text.
-4. Configure `SublimeREPL` in `Preferences | Package Settings | SublimeREPL`.
+4. Use it on Linux and configure `SublimeREPL` in `Preferences | Package Settings | SublimeREPL`.
 
 Usage
 =====

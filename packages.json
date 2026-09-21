@@ -2,8 +2,8 @@
     "schema_version": "3.0.0",
     "packages": [{
         "name": "SublimeREPL",
-        "details": "https://github.com/wuub/SublimeREPL",
-        "description": "SublimeREPL - run Python inside Sublime Text, with virtualenv, IPython, and debugger support.",
+        "details": "https://github.com/Gabriel-p/SublimeREPL",
+        "description": "SublimeREPL - Linux-only Python REPL integration for Sublime Text, with virtualenv, IPython, and debugger support.",
         "releases": [
             {
                 "sublime_text": "*",

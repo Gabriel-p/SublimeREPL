@@ -11,11 +11,10 @@ SETTINGS_FILE = "SublimeREPL.sublime-settings"
 
 
 def scan_for_virtualenvs(venv_paths):
-    bin_dir = "Scripts" if os.name == "nt" else "bin"
     found_dirs = set()
     for venv_path in venv_paths:
         p = os.path.expanduser(venv_path)
-        pattern = os.path.join(p, "*", bin_dir, "activate_this.py")
+        pattern = os.path.join(p, "*", "bin", "activate_this.py")
         found_dirs.update(list(map(os.path.dirname, glob.glob(pattern))))
     return sorted(found_dirs)
 
@@ -31,10 +30,6 @@ class PythonVirtualenvRepl(sublime_plugin.WindowCommand):
         (name, directory) = choices[index]
         activate_file = os.path.join(directory, "activate_this.py")
         python_executable = os.path.join(directory, "python")
-        path_separator = ":"
-        if os.name == "nt":
-            python_executable += ".exe"  # ;-)
-            path_separator = ";"
 
         self.window.run_command("repl_open",
             {
@@ -42,7 +37,7 @@ class PythonVirtualenvRepl(sublime_plugin.WindowCommand):
                 "type": "subprocess",
                 "autocomplete_server": True,
                 "extend_env": {
-                    "PATH": directory + path_separator + "{PATH}",
+                    "PATH": directory + ":" + "{PATH}",
                     "SUBLIMEREPL_ACTIVATE_THIS": activate_file,
                     "PYTHONIOENCODING": "utf-8"
                 },
@@ -57,7 +52,6 @@ class PythonVirtualenvRepl(sublime_plugin.WindowCommand):
         choices = self._scan()
         nice_choices = [[path.split(os.path.sep)[-2], path] for path in choices]
         self.window.show_quick_panel(nice_choices, partial(self.run_virtualenv, nice_choices))
-
 
 
 

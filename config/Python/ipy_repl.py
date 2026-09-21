@@ -51,13 +51,6 @@ except ImportError:
 embedded_shell = ZMQTerminalIPythonApp(config=cfg, user_ns={})
 embedded_shell.initialize()
 
-if os.name == "nt":
-    # OMG what a fugly hack
-    import IPython.utils.io as io
-    io.stdout = io.IOStream(sys.__stdout__, fallback=io.devnull)
-    io.stderr = io.IOStream(sys.__stderr__, fallback=io.devnull)
-    embedded_shell.shell.show_banner()  # ... my eyes, oh my eyes..
-
 
 ac_port = int(os.environ.get("SUBLIMEREPL_AC_PORT", "0"))
 ac_ip = os.environ.get("SUBLIMEREPL_AC_IP", "127.0.0.1")

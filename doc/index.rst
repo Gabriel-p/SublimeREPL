@@ -4,8 +4,8 @@
 SublimeREPL
 ===========
 
-SublimeREPL is a Sublime Text plugin focused on running Python inside a normal
-editor tab. It supports launching an interactive Python REPL, IPython,
+SublimeREPL is a Linux-only Sublime Text plugin focused on running Python inside
+a normal editor tab. It supports launching an interactive Python REPL, IPython,
 virtualenv-backed Python sessions, running the current file, and debugging the
 current file with PDB.
 
@@ -34,25 +34,25 @@ Keyboard shortcuts
 REPL keys
 ^^^^^^^^^
 
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Linux         | OS X          | Windows        | Command used                     | Meaning                                         |
-+===============+===============+================+==================================+=================================================+
-| Up            | Up            | Up             | repl_view_previous               | Walk back to previous input, with autocomplete  |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Alt+p         | Ctrl+p        | Alt+p          | repl_view_previous               | Walk back to previous input, no autocomplete    |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Down          | Down          | Down           | repl_view_next                   | Walk back to next input, with autocomplete      |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Alt+n         | Ctrl+n        | Alt+n          | repl_view_next                   | Walk back to next input, no autocomplete        |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Enter         | Enter         | Enter          | repl_enter                       | Send current line to REPL                       |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Esc           | Esc           | Esc            | repl_escape                      | Clear REPL input                                |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Ctrl+l        | Ctrl+l        | Shift+Ctrl+c   | repl_clear                       | Clear REPL screen                               |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
-| Shift+Ctrl+c  | Shift+Ctrl+c  | *Unsupported*  | subprocess_repl_send_signal      | Send SIGINT to REPL                             |
-+---------------+---------------+----------------+----------------------------------+-------------------------------------------------+
++---------------+----------------------------------+-------------------------------------------------+
+| Key           | Command used                     | Meaning                                         |
++===============+==================================+=================================================+
+| Up            | repl_view_previous               | Walk back to previous input, with autocomplete  |
++---------------+----------------------------------+-------------------------------------------------+
+| Alt+p         | repl_view_previous               | Walk back to previous input, no autocomplete    |
++---------------+----------------------------------+-------------------------------------------------+
+| Down          | repl_view_next                   | Walk back to next input, with autocomplete      |
++---------------+----------------------------------+-------------------------------------------------+
+| Alt+n         | repl_view_next                   | Walk back to next input, no autocomplete        |
++---------------+----------------------------------+-------------------------------------------------+
+| Enter         | repl_enter                       | Send current line to REPL                       |
++---------------+----------------------------------+-------------------------------------------------+
+| Esc           | repl_escape                      | Clear REPL input                                |
++---------------+----------------------------------+-------------------------------------------------+
+| Ctrl+l        | repl_clear                       | Clear REPL screen                               |
++---------------+----------------------------------+-------------------------------------------------+
+| Shift+Ctrl+c  | subprocess_repl_send_signal      | Send SIGINT to REPL                             |
++---------------+----------------------------------+-------------------------------------------------+
 
 Source buffer keys
 ^^^^^^^^^^^^^^^^^^
