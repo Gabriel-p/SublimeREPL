@@ -30,7 +30,6 @@ except ImportError:
     unicode_type = unicode
     PY2 = True
 
-PLATFORM = sublime.platform().lower()
 SETTINGS_FILE = 'SublimeREPL.sublime-settings'
 SUBLIME2 = sublime.version() < '3000'
 
@@ -539,7 +538,6 @@ class ReplManager(object):
     @staticmethod
     def _subst_for_translate(window):
         """ Return all available substitutions"""
-        import locale
         res = {
             "packages": sublime.packages_path(),
             "installed_packages": sublime.installed_packages_path()
@@ -547,10 +545,6 @@ class ReplManager(object):
         if window.folders():
             res["folder"] = window.folders()[0]
         res["editor"] = "subl -w"
-        res["win_cmd_encoding"] = "utf8"
-        if sublime.platform() == "windows":
-            res["win_cmd_encoding"] = locale.getdefaultlocale()[1]
-            res["editor"] = '"%s"' % (sys.executable,)
         av = window.active_view()
         if av is None:
             return res
@@ -576,9 +570,8 @@ class ReplManager(object):
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
 
-        # see #200, on older OSX (10.6.8) system wide python won't accept
-        # dict(unicode -> unicode) as **argument.
-        # It's best to just str() keys, since they are ascii anyway
+        # Older Python runtimes can choke on dict(unicode -> unicode) as
+        # **kwargs, so normalize keys to str when needed.
         if PY2:
             subst = dict((str(key), val) for key, val in subst.items())
 
@@ -594,8 +587,6 @@ class ReplManager(object):
     def _translate_dict(window, dictionary, subst=None):
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
-        if PLATFORM in dictionary:
-            return ReplManager.translate(window, dictionary[PLATFORM], subst)
         for k, v in list(dictionary.items()):
             dictionary[k] = ReplManager.translate(window, v, subst)
         return dictionary

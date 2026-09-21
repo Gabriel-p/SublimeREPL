@@ -7,20 +7,15 @@ from __future__ import absolute_import, unicode_literals, print_function, divisi
 import subprocess
 import os
 import sys
-from .repl import Repl
 import signal
+from .repl import Repl
 from sublime import load_settings, error_message
 from .autocomplete_server import AutocompleteServer
-from .killableprocess import Popen
 
 PY3 = sys.version_info[0] == 3
 
-if os.name == 'posix':
-    POSIX = True
-    import fcntl
-    import select
-else:
-    POSIX = False
+import fcntl
+import select
 
 
 class Unsupported(Exception):
@@ -30,27 +25,6 @@ class Unsupported(Exception):
 
     def __repr__(self):
         return "\n".join(self.msgs)
-
-
-def win_find_executable(executable, env):
-    """Explicetely looks for executable in env["PATH"]"""
-    if os.path.dirname(executable):
-        return executable # executable is already absolute filepath
-    path = env.get("PATH", "")
-    pathext = env.get("PATHEXT") or ".EXE"
-    dirs = path.split(os.path.pathsep)
-    (base, ext) = os.path.splitext(executable)
-    if ext:
-        extensions = [ext]
-    else:
-        extensions = pathext.split(os.path.pathsep)
-    for directory in dirs:
-        for extension in extensions:
-            filepath = os.path.join(directory, base + extension)
-            if os.path.exists(filepath):
-                return filepath
-    return None
-
 
 class SubprocessRepl(Repl):
     TYPE = "subprocess"
@@ -80,20 +54,18 @@ class SubprocessRepl(Repl):
         self._cmd = self.cmd(cmd, env)
         self._soft_quit = soft_quit
         self._killed = False
-        self.popen = Popen(
+        self.popen = subprocess.Popen(
                         self._cmd,
-                        startupinfo=self.startupinfo(settings),
-                        creationflags=self.creationflags(settings),
                         bufsize=1,
+                        preexec_fn=os.setsid,
                         cwd=self.cwd(cwd, settings),
                         env=env,
                         stderr=subprocess.STDOUT,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE)
 
-        if POSIX:
-            flags = fcntl.fcntl(self.popen.stdout, fcntl.F_GETFL)
-            fcntl.fcntl(self.popen.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        flags = fcntl.fcntl(self.popen.stdout, fcntl.F_GETFL)
+        fcntl.fcntl(self.popen.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
     def autocomplete_server_port(self):
         if not self._autocomplete_server:
@@ -115,18 +87,7 @@ class SubprocessRepl(Repl):
         )
 
     def cmd(self, cmd, env):
-        """On Linux and OSX just returns cmd, on windows it has to find
-           executable in env because of this: http://bugs.python.org/issue8557"""
-        if os.name != "nt":
-            return cmd
-        if isinstance(cmd, str):
-            _cmd = [cmd]
-        else:
-            _cmd = cmd
-        executable = win_find_executable(_cmd[0], env)
-        if executable:
-            _cmd[0] = executable
-        return _cmd
+        return cmd
 
     def cwd(self, cwd, settings):
         if cwd and os.path.exists(cwd):
@@ -134,12 +95,10 @@ class SubprocessRepl(Repl):
         return None
 
     def getenv(self, settings):
-        """Tries to get most appropriate environent, on windows
-           it's os.environ.copy, but on other system's we'll
-           try get values from login shell"""
+        """Tries to get most appropriate environment from the login shell."""
 
         getenv_command = settings.get("getenv_command")
-        if getenv_command and POSIX:
+        if getenv_command:
             try:
                 output = subprocess.check_output(getenv_command)
                 lines = output.decode("utf-8", errors="replace").splitlines()
@@ -153,7 +112,6 @@ class SubprocessRepl(Repl):
                     "Check console and 'getenv_command' setting \n"
                     "WARN: Falling back to SublimeText environment")
 
-        # Fallback to environ.copy() if not on POSIX or sane getenv failed
         return os.environ.copy()
 
     def env(self, env, extend_env, settings):
@@ -183,21 +141,6 @@ class SubprocessRepl(Repl):
             new_env[key] = str(val).format(**env)
         return new_env
 
-    def startupinfo(self, settings):
-        startupinfo = None
-        if os.name == 'nt':
-            from .killableprocess import STARTUPINFO, STARTF_USESHOWWINDOW
-            startupinfo = STARTUPINFO()
-            startupinfo.dwFlags |= STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow |= 1 # SW_SHOWNORMAL
-        return startupinfo
-
-    def creationflags(self, settings):
-        creationflags = 0
-        if os.name == "nt":
-            creationflags = 0x8000000 # CREATE_NO_WINDOW
-        return creationflags
-
     def name(self):
         if self.external_id:
             return self.external_id
@@ -210,22 +153,10 @@ class SubprocessRepl(Repl):
 
     def read_bytes(self):
         out = self.popen.stdout
-        if POSIX:
-            while True:
-                i, _, _ = select.select([out], [], [])
-                if i:
-                    return out.read(4096)
-        else:
-            # this is windows specific problem, that you cannot tell if there
-            # are more bytes ready, so we read only 1 at a times
-
-            while True:
-                byte = self.popen.stdout.read(1)
-                if byte == b'\r':
-                    # f'in HACK, for \r\n -> \n translation on windows
-                    # I tried universal_endlines but it was pain and misery! :'(
-                    continue
-                return byte
+        while True:
+            i, _, _ = select.select([out], [], [])
+            if i:
+                return out.read(4096)
 
 
 
@@ -237,6 +168,10 @@ class SubprocessRepl(Repl):
     def kill(self):
         self._killed = True
         self.write(self._soft_quit)
+        try:
+            os.killpg(self.popen.pid, signal.SIGKILL)
+        except OSError:
+            pass
         self.popen.kill()
 
     def available_signals(self):
@@ -251,5 +186,4 @@ class SubprocessRepl(Repl):
         if sig == signal.SIGTERM:
             self._killed = True
         if self.is_alive():
-            self.popen.send_signal(sig)
-
+            os.killpg(self.popen.pid, sig)

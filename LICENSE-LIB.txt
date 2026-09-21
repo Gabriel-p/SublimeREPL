@@ -1,9 +1,7 @@
 LICENSE Libraries and external dependencies
 
-SublimeREPL is not a monolithic block of code and some REPLs / functions depends on external libraries.
+SublimeREPL is not a monolithic block of code and some REPLs / functions depend on external libraries.
 
 This means that, although the parts of SublimeREPL that I (wuub) wrote are published under BSD license and you're free to reuse them as you wish, the whole SublimeREPL package is as of now licensed under GPLv2.
 
 - Persistent history depends on buzhug library by Pierre Quentel. (http://buzhug.sourceforge.net/ buzhug is published under the revised BSD licence.
-
-- subprocess_repl depends on killableprocess by Peter Astrand, Mike Taylor and Mikeal Rogers. Please see killableprocess.py for details.
