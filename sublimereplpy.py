@@ -230,7 +230,9 @@ class SubprocessRepl(Repl):
         if PY3:
             strings_env = {}
             for k, v in env.items():
-                strings_env[k.decode("utf-8")] = v.decode("utf-8")
+                strings_env[k.decode(self._encoding, errors="replace")] = v.decode(
+                    self._encoding, errors="replace"
+                )
             env = strings_env
 
         self._cmd = self.cmd(cmd, env)
