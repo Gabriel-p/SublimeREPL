@@ -60,6 +60,7 @@ class Repl:
             cur = todo.pop()
             if cur in seen:
                 continue
+            seen.add(cur)
             if cur.TYPE == type:
                 return cur
             todo.extend(cur.__subclasses__())
@@ -501,6 +502,8 @@ class HistoryMatchList:
 
     def next_command(self):
         """Move to and return the next matching command."""
+        if not self._commands:
+            return ""
         self._cur = min(len(self._commands) - 1, self._cur + 1)
         return self.current_command()
 

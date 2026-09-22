@@ -51,6 +51,7 @@ it finds. If no project-local interpreter is available, it falls back to
 
 Dispatches Sublime Text's `repl_open` window command with the encoding, backend type,
 command line, working directory, syntax, and external identifier. This hands control to
+Sublime's `repl_open` command name, which is implemented by
 `ReplOpenCommand.run` in `sublimereplpy.py`.
 
 
