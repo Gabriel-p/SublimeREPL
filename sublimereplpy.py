@@ -11,10 +11,8 @@ from codecs import getencoder, getincrementaldecoder
 from uuid import uuid4
 
 # try:
-import fcntl
 import queue
 import re
-import select
 import threading
 import traceback
 
@@ -26,6 +24,13 @@ unicode_type = str
 SETTINGS_FILE = "SublimeREPL-py.sublime-settings"
 # SUBLIME2 = sublime.version() < "3000"
 PY3 = sys.version_info[0] == 3
+
+try:
+    import fcntl
+    import select
+except ImportError:
+    fcntl = None
+    select = None
 
 RESTART_MSG = """
 #############
@@ -209,6 +214,10 @@ class SubprocessRepl(Repl):
         print(f"[trace] SubprocessRepl.__init__(cmd={cmd}, cwd={cwd})")
         super().__init__(encoding, **kwds)
         settings = sublime.load_settings(SETTINGS_FILE)
+        if fcntl is None or select is None:
+            raise Unsupported(
+                ["SublimeREPL-py subprocess backend requires POSIX (fcntl/select)."]
+            )
 
         if cmd[0] == "[unsupported]":
             raise Unsupported(cmd[1:])
@@ -227,7 +236,7 @@ class SubprocessRepl(Repl):
         self.popen = subprocess.Popen(
             self._cmd,
             bufsize=1,
-            preexec_fn=os.setsid,
+            preexec_fn=os.setsid if hasattr(os, "setsid") else None,
             cwd=self.cwd(cwd, settings),
             env=env,
             stderr=subprocess.STDOUT,
@@ -360,6 +369,8 @@ class SubprocessRepl(Repl):
         Returns:
             bytes: Output bytes chunk.
         """
+        if select is None:
+            return None
         out = self.popen.stdout
         while True:
             i, _, _ = select.select([out], [], [])
@@ -383,7 +394,8 @@ class SubprocessRepl(Repl):
         self._killed = True
         self.write(self._soft_quit)
         try:
-            os.killpg(self.popen.pid, signal.SIGKILL)
+            if hasattr(os, "killpg"):
+                os.killpg(self.popen.pid, signal.SIGKILL)
         except OSError:
             pass
         self.popen.kill()
