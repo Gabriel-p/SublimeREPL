@@ -220,6 +220,8 @@ class SubprocessRepl(Repl):
                 ["SublimeREPL-py subprocess backend requires POSIX (fcntl/select)."]
             )
 
+        if not cmd:
+            raise Unsupported(["SublimeREPL-py subprocess backend requires a command."])
         if cmd[0] == "[unsupported]":
             raise Unsupported(cmd[1:])
 
@@ -317,7 +319,7 @@ class SubprocessRepl(Repl):
             dict: Environment mapping encoded as bytes pairs.
         """
         print("[trace] SubprocessRepl.env()")
-        updated_env = env if env else self.getenv(settings)
+        updated_env = dict(env) if env else self.getenv(settings)
         default_extend_env = settings.get("default_extend_env")
         if default_extend_env:
             updated_env.update(
