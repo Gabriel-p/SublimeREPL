@@ -2,19 +2,20 @@ SublimeREPL-py Code Map
 =======================
 
 This package keeps only the Python-specific REPL path that starts in
-`project_venv_repl.py`, opens a `repl_open` window command from `sublimerepl.py`,
+`run_python_repl.py`, opens a `repl_open` window command from `sublimerepl.py`,
 and runs a `SubprocessRepl` backend from `repls/subprocess_repl.py`.
 
 
 ```
-ProjectVenvReplCommand.run()
+RunPythonReplCommand.run()
  ├── get_venv_python()          [used]
  ├── repl_open()                [used]
  │     └── view.window().run_command("repl_open", {...})   → dispatches into ReplOpenCommand
  └── (via Sublime Text's command dispatch, NOT a direct Python call)
        ReplOpenCommand.run()
         └── manager.open()  (ReplManager instance)
-             ├── ReplManager.translate() / _subst_for_translate() / _translate_dict/_list/_string (kwds have no templated strings here, but translate() is always invoked)
+             │   (kwds have no templated strings here, but translate() is always invoked)
+             ├── ReplManager.translate() / _subst_for_translate() / _translate_dict/_list/_string
              ├── repls.Repl.subclass("subprocess")   → resolves to SubprocessRepl
              ├── SubprocessRepl.__init__() 
              │     ├── env(), getenv(), interpolate_extend_env(), cmd(), cwd()
@@ -25,10 +26,10 @@ ProjectVenvReplCommand.run()
 ```
 
 
-File: `project_venv_repl.py`
+File: `run_python_repl.py`
 ----------------------------
 
-### `ProjectVenvReplCommand`
+### `RunPythonReplCommand`
 
 Sublime Text text command that is invoked by the command palette and menu entries. It is
 the entry point for the package's remaining runtime flow.
