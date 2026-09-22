@@ -1,35 +1,5 @@
 [
     {
-        "id": "tools",
-        "children": [
-            {
-                "caption": "SublimeREPL-py",
-                "mnemonic": "R",
-                "id": "SublimeREPL-py",
-                "children": [
-                    {
-                        "caption": "Run Current File",
-                        "command": "run_python_repl",
-                        "args": {
-                            "name": "python"
-                        }
-                    },
-                    {
-                        "caption": "Interactive",
-                        "command": "run_python_repl",
-                        "args": {
-                            "interactive": true,
-                            "name": "python"
-                        }
-                    },
-                    {
-                        "caption": "-"
-                    }
-                ]
-            }
-        ]
-    },
-    {
         "caption": "Preferences",
         "mnemonic": "n",
         "id": "preferences",
