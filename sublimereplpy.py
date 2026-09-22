@@ -294,7 +294,9 @@ class SubprocessRepl(Repl):
                 env = dict(line.split("=", 1) for line in lines)
                 return env
             except Exception:
-                traceback.print_exc()
+                import traceback as _traceback
+
+                _traceback.print_exc()
                 sublime.error_message(
                     "SublimeREPL-py: obtaining sane environment failed in getenv()\n"
                     "Check console and 'getenv_command' setting \n"
@@ -493,18 +495,22 @@ class HistoryMatchList:
         """Return the current command in the match list."""
         if not self._commands:
             return ""
+        if self._cur >= len(self._commands):
+            return self._command_prefix
         return self._commands[self._cur]
 
     def prev_command(self):
         """Move to and return the previous matching command."""
+        if not self._commands:
+            return self._command_prefix
         self._cur = max(0, self._cur - 1)
         return self.current_command()
 
     def next_command(self):
         """Move to and return the next matching command."""
         if not self._commands:
-            return ""
-        self._cur = min(len(self._commands) - 1, self._cur + 1)
+            return self._command_prefix
+        self._cur = min(len(self._commands), self._cur + 1)
         return self.current_command()
 
 
