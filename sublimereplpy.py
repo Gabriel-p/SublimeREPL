@@ -227,14 +227,6 @@ class SubprocessRepl(Repl):
 
         env = self.env(env, extend_env, settings)
 
-        if PY3:
-            strings_env = {}
-            for k, v in env.items():
-                strings_env[k.decode(self._encoding, errors="replace")] = v.decode(
-                    self._encoding, errors="replace"
-                )
-            env = strings_env
-
         self._cmd = self.cmd(cmd, env)
         self._soft_quit = soft_quit
         self._killed = False
@@ -337,6 +329,9 @@ class SubprocessRepl(Repl):
             )
         if extend_env:
             updated_env.update(self.interpolate_extend_env(updated_env, extend_env))
+
+        if PY3:
+            return {str(k): str(v) for k, v in updated_env.items()}
 
         bytes_env = {}
         for k, v in list(updated_env.items()):
@@ -1520,8 +1515,9 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
             str: Executable Python path.
         """
         print(f"[trace] RunPythonReplCommand.get_venv_python(start_path={start_path})")
+        fallback_python = sys.executable or "python3"
         if not start_path:
-            return "/usr/bin/python3"
+            return fallback_python
 
         dir_path = os.path.dirname(start_path)
 
@@ -1534,7 +1530,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
                 break
             dir_path = parent
 
-        return "/usr/bin/python3"
+        return fallback_python
 
     def repl_open(self, cmd_list, name, file_name):
         """Dispatch ``repl_open`` command to create REPL subprocess view.
