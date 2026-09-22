@@ -1,9 +1,9 @@
 SublimeREPL-py Code Map
 =======================
 
-This package keeps only the Python-specific REPL path that starts in
-`run_python_repl.py`, opens a `repl_open` window command from `sublimerepl.py`,
-and runs a `SubprocessRepl` backend from `repls/subprocess_repl.py`.
+This package keeps only the Python-specific REPL path in
+`sublimereplpy.py`, from `RunPythonReplCommand` through `ReplOpenCommand`
+and the `SubprocessRepl` backend.
 
 
 ```
@@ -16,7 +16,7 @@ RunPythonReplCommand.run()
         └── manager.open()  (ReplManager instance)
              │   (kwds have no templated strings here, but translate() is always invoked)
              ├── ReplManager.translate() / _subst_for_translate() / _translate_dict/_list/_string
-             ├── repls.Repl.subclass("subprocess")   → resolves to SubprocessRepl
+             ├── Repl.subclass("subprocess")   → resolves to SubprocessRepl
              ├── SubprocessRepl.__init__() 
              │     ├── env(), getenv(), interpolate_extend_env(), cmd(), cwd()
              ├── ReplView.__init__()
@@ -26,8 +26,8 @@ RunPythonReplCommand.run()
 ```
 
 
-File: `run_python_repl.py`
-----------------------------
+File section: `sublimereplpy.py` (RunPythonReplCommand)
+-------------------------------------------------------
 
 ### `RunPythonReplCommand`
 
@@ -51,14 +51,15 @@ it finds. If no project-local interpreter is available, it falls back to
 
 Dispatches Sublime Text's `repl_open` window command with the encoding, backend type,
 command line, working directory, syntax, and external identifier. This hands control to
-`ReplOpenCommand.run` in `sublimerepl.py`.
+Sublime's `repl_open` command name, which is implemented by
+`ReplOpenCommand.run` in `sublimereplpy.py`.
 
 
 
 
 
-File: `repls/repl.py`
----------------------
+File section: `sublimereplpy.py` (Repl base classes)
+----------------------------------------------------
 
 ### `NoReplError`
 
@@ -129,8 +130,8 @@ Reads backend bytes, decodes them into text, and returns the next output chunk.
 
 
 
-File: `repls/subprocess_repl.py`
---------------------------------
+File section: `sublimereplpy.py` (Subprocess backend)
+-----------------------------------------------------
 
 ### `Unsupported`
 
@@ -212,8 +213,8 @@ shutdown.
 
 
 
-File: `sublimerepl.py`
-----------------------
+File section: `sublimereplpy.py` (Sublime command layer)
+--------------------------------------------------------
 
 ### `ReplInsertTextCommand`
 
