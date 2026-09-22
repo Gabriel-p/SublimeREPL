@@ -1,36 +1,23 @@
-# Copyright (c) 2011, Wojciech Bederski (wuub.net)
-# All rights reserved.
-# See LICENSE.txt for details.
+# Original version: copyright (c) 2011, Wojciech Bederski (wuub.net)
 
+import fcntl
 import os
 import os.path
+import queue
+import re
+import select
 import signal
 import subprocess
 import sys
-from codecs import getencoder, getincrementaldecoder
-from uuid import uuid4
-
-# try:
-import queue
-import re
 import threading
 import traceback
+from codecs import getencoder, getincrementaldecoder
+from uuid import uuid4
 
 import sublime
 import sublime_plugin
 
-unicode_type = str
-
 SETTINGS_FILE = "SublimeREPL-py.sublime-settings"
-# SUBLIME2 = sublime.version() < "3000"
-PY3 = sys.version_info[0] == 3
-
-try:
-    import fcntl
-    import select
-except ImportError:
-    fcntl = None
-    select = None
 
 RESTART_MSG = """
 #############
@@ -39,31 +26,13 @@ RESTART_MSG = """
 """
 
 
-class NoReplError(LookupError):
-    """Raised when a REPL backend type cannot be resolved."""
+def _trace(msg):
+    # print(msg)
+    pass
 
 
 class Repl:
     """Represent a running REPL process abstraction."""
-
-    TYPE = "<base>"
-
-    @classmethod
-    def subclass(cls, type):
-        """Return the REPL subclass registered for ``type``."""
-        print(f"[trace] Repl.subclass(type={type})")
-        todo = [cls]
-        seen = set()
-        while True:
-            if not todo:
-                raise NoReplError
-            cur = todo.pop()
-            if cur in seen:
-                continue
-            seen.add(cur)
-            if cur.TYPE == type:
-                return cur
-            todo.extend(cur.__subclasses__())
 
     def __init__(
         self,
@@ -84,7 +53,7 @@ class Repl:
             additional_scopes: Extra scope names for highlighting behavior.
             apiv2: Whether the backend emits API v2 packet output.
         """
-        print(f"[trace] Repl.__init__(encoding={encoding}, external_id={external_id})")
+        _trace(f"[trace] Repl.__init__(encoding={encoding}, external_id={external_id})")
         self.id = uuid4().hex
         self._encoding = encoding
         self.decoder = getincrementaldecoder(self._encoding)()
@@ -97,12 +66,12 @@ class Repl:
 
     def allow_restarts(self):
         """Return whether this REPL supports restart behavior."""
-        print("[trace] Repl.allow_restarts()")
+        _trace("[trace] Repl.allow_restarts()")
         return True
 
     def close(self):
         """Close the REPL process if it is still alive."""
-        print("[trace] Repl.close()")
+        _trace("[trace] Repl.close()")
         if self.is_alive():
             self.kill()
 
@@ -139,13 +108,13 @@ class Repl:
         Returns:
             Any: Result from ``write_bytes`` implementation.
         """
-        print("[trace] Repl.write()")
+        _trace("[trace] Repl.write()")
         (bytes, _) = self.encoder(command)
         return self.write_bytes(bytes)
 
     def reset_decoder(self):
         """Reset the incremental decoder after malformed output."""
-        print("[trace] Repl.reset_decoder()")
+        _trace("[trace] Repl.reset_decoder()")
         self.decoder = getincrementaldecoder(self._encoding)()
 
     def read(self):
@@ -154,7 +123,7 @@ class Repl:
         Returns:
             str | None: Decoded output chunk, or ``None`` when process exits.
         """
-        print("[trace] Repl.read()")
+        _trace("[trace] Repl.read()")
         while True:
             bs = self.read_bytes()
             if not bs:
@@ -177,7 +146,7 @@ class Unsupported(Exception):
         Args:
             msgs: Message list describing why the command is unsupported.
         """
-        print("[trace] Unsupported.__init__()")
+        _trace("[trace] Unsupported.__init__()")
         super().__init__()
         self.msgs = msgs
 
@@ -188,8 +157,6 @@ class Unsupported(Exception):
 
 class SubprocessRepl(Repl):
     """Run a REPL backed by a subprocess."""
-
-    TYPE = "subprocess"
 
     def __init__(
         self,
@@ -212,13 +179,9 @@ class SubprocessRepl(Repl):
             soft_quit: Optional text sent before hard kill.
             **kwds: Forwarded REPL base arguments.
         """
-        print(f"[trace] SubprocessRepl.__init__(cmd={cmd}, cwd={cwd})")
+        _trace(f"[trace] SubprocessRepl.__init__(cmd={cmd}, cwd={cwd})")
         super().__init__(encoding, **kwds)
         settings = sublime.load_settings(SETTINGS_FILE)
-        if fcntl is None or select is None:
-            raise Unsupported(
-                ["SublimeREPL-py subprocess backend requires POSIX (fcntl/select)."]
-            )
 
         if not cmd:
             raise Unsupported(["SublimeREPL-py subprocess backend requires a command."])
@@ -233,7 +196,7 @@ class SubprocessRepl(Repl):
         self.popen = subprocess.Popen(
             self._cmd,
             bufsize=1,
-            preexec_fn=os.setsid if hasattr(os, "setsid") else None,
+            preexec_fn=os.setsid,
             cwd=self.cwd(cwd, settings),
             env=env,
             stderr=subprocess.STDOUT,
@@ -254,7 +217,7 @@ class SubprocessRepl(Repl):
         Returns:
             list | str: Command passed to ``subprocess.Popen``.
         """
-        print("[trace] SubprocessRepl.cmd()")
+        _trace("[trace] SubprocessRepl.cmd()")
         return cmd
 
     def cwd(self, cwd, settings):
@@ -267,7 +230,7 @@ class SubprocessRepl(Repl):
         Returns:
             str | None: Existing path, or ``None`` to use default behavior.
         """
-        print(f"[trace] SubprocessRepl.cwd(cwd={cwd})")
+        _trace(f"[trace] SubprocessRepl.cwd(cwd={cwd})")
         if cwd and os.path.exists(cwd):
             return cwd
         return None
@@ -281,7 +244,7 @@ class SubprocessRepl(Repl):
         Returns:
             dict: Environment mapping.
         """
-        print("[trace] SubprocessRepl.getenv()")
+        _trace("[trace] SubprocessRepl.getenv()")
         getenv_command = settings.get("getenv_command")
         if getenv_command:
             try:
@@ -320,7 +283,7 @@ class SubprocessRepl(Repl):
         Returns:
             dict: Environment mapping encoded as bytes pairs.
         """
-        print("[trace] SubprocessRepl.env()")
+        _trace("[trace] SubprocessRepl.env()")
         updated_env = dict(env) if env else self.getenv(settings)
         default_extend_env = settings.get("default_extend_env")
         if default_extend_env:
@@ -329,20 +292,7 @@ class SubprocessRepl(Repl):
             )
         if extend_env:
             updated_env.update(self.interpolate_extend_env(updated_env, extend_env))
-
-        if PY3:
-            return {str(k): str(v) for k, v in updated_env.items()}
-
-        bytes_env = {}
-        for k, v in list(updated_env.items()):
-            try:
-                enc_k = self.encoder(str(k))[0]
-                enc_v = self.encoder(str(v))[0]
-            except UnicodeDecodeError:
-                continue
-            else:
-                bytes_env[enc_k] = enc_v
-        return bytes_env
+        return {str(k): str(v) for k, v in updated_env.items()}
 
     def interpolate_extend_env(self, env, extend_env):
         """Substitute values in an extend-env mapping.
@@ -354,7 +304,7 @@ class SubprocessRepl(Repl):
         Returns:
             dict: New mapping with placeholders substituted.
         """
-        print("[trace] SubprocessRepl.interpolate_extend_env()")
+        _trace("[trace] SubprocessRepl.interpolate_extend_env()")
         new_env = {}
         for key, val in list(extend_env.items()):
             new_env[key] = str(val).format(**env)
@@ -362,7 +312,7 @@ class SubprocessRepl(Repl):
 
     def name(self):
         """Return process name displayed in the REPL view title."""
-        print("[trace] SubprocessRepl.name()")
+        _trace("[trace] SubprocessRepl.name()")
         if self.external_id:
             return self.external_id
         if isinstance(self._cmd, str):
@@ -379,8 +329,6 @@ class SubprocessRepl(Repl):
         Returns:
             bytes: Output bytes chunk.
         """
-        if select is None:
-            return None
         out = self.popen.stdout
         while True:
             i, _, _ = select.select([out], [], [], 0.1)
@@ -399,19 +347,18 @@ class SubprocessRepl(Repl):
         Args:
             bytes: Bytes chunk to write.
         """
-        print("[trace] SubprocessRepl.write_bytes()")
+        _trace("[trace] SubprocessRepl.write_bytes()")
         si = self.popen.stdin
         si.write(bytes)
         si.flush()
 
     def kill(self):
         """Terminate subprocess and its process group."""
-        print("[trace] SubprocessRepl.kill()")
+        _trace("[trace] SubprocessRepl.kill()")
         self._killed = True
         self.write(self._soft_quit)
         try:
-            if hasattr(os, "killpg"):
-                os.killpg(self.popen.pid, signal.SIGKILL)
+            os.killpg(self.popen.pid, signal.SIGKILL)
         except OSError:
             pass
         self.popen.kill()
@@ -428,7 +375,7 @@ class ReplInsertTextCommand(sublime_plugin.TextCommand):
             pos: Integer-like insertion position.
             text: Text to insert.
         """
-        print(f"[trace] ReplInsertTextCommand.run(pos={pos})")
+        _trace(f"[trace] ReplInsertTextCommand.run(pos={pos})")
         self.view.set_read_only(False)  # make sure view is writable
         self.view.insert(edit, int(pos), text)
 
@@ -444,7 +391,7 @@ class ReplEraseTextCommand(sublime_plugin.TextCommand):
             start: Range start position.
             end: Range end position.
         """
-        print(f"[trace] ReplEraseTextCommand.run(start={start}, end={end})")
+        _trace(f"[trace] ReplEraseTextCommand.run(start={start}, end={end})")
         self.view.set_read_only(False)  # make sure view is writable
         self.view.erase(edit, sublime.Region(int(start), int(end)))
 
@@ -458,8 +405,7 @@ class ReplPass(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplPass.run()")
-        pass
+        _trace("[trace] ReplPass.run()")
 
 
 class ReplReader(threading.Thread):
@@ -471,7 +417,7 @@ class ReplReader(threading.Thread):
         Args:
             repl: REPL backend object.
         """
-        print("[trace] ReplReader.__init__()")
+        _trace("[trace] ReplReader.__init__()")
         super().__init__()
         self.repl = repl
         self.daemon = True
@@ -479,7 +425,7 @@ class ReplReader(threading.Thread):
 
     def run(self):
         """Continuously pull REPL output into a queue."""
-        print("[trace] ReplReader.run()")
+        _trace("[trace] ReplReader.run()")
         r = self.repl
         q = self.queue
         while True:
@@ -499,7 +445,7 @@ class HistoryMatchList:
             command_prefix: Prefix used to build this match list.
             commands: Matching command strings.
         """
-        print(f"[trace] HistoryMatchList.__init__(prefix={command_prefix})")
+        _trace(f"[trace] HistoryMatchList.__init__(prefix={command_prefix})")
         self._command_prefix = command_prefix
         self._commands = commands
         self._cur = len(commands)  # no '-1' on purpose
@@ -532,7 +478,7 @@ class History:
 
     def __init__(self):
         """Create history state."""
-        print("[trace] History.__init__()")
+        _trace("[trace] History.__init__()")
         self._last = None
 
     def push(self, command):
@@ -541,7 +487,7 @@ class History:
         Args:
             command: Candidate command text.
         """
-        print("[trace] History.push()")
+        _trace("[trace] History.push()")
         cmd = command.rstrip()
         if not cmd or cmd == self._last:
             return
@@ -562,7 +508,7 @@ class MemHistory(History):
 
     def __init__(self):
         """Initialize memory-backed history."""
-        print("[trace] MemHistory.__init__()")
+        _trace("[trace] MemHistory.__init__()")
         super().__init__()
         self._stack = []
 
@@ -572,7 +518,7 @@ class MemHistory(History):
         Args:
             cmd: Command string.
         """
-        print("[trace] MemHistory.append()")
+        _trace("[trace] MemHistory.append()")
         self._stack.append(cmd)
 
     def match(self, command_prefix):
@@ -584,7 +530,7 @@ class MemHistory(History):
         Returns:
             HistoryMatchList: Navigator over matching commands.
         """
-        print(f"[trace] MemHistory.match(prefix={command_prefix})")
+        _trace(f"[trace] MemHistory.match(prefix={command_prefix})")
         matching_commands = []
         for cmd in self._stack:
             if cmd.startswith(command_prefix):
@@ -604,7 +550,7 @@ class ReplView:
             syntax: Optional syntax file path.
             repl_restart_args: Serialized restart arguments.
         """
-        print("[trace] ReplView.__init__()")
+        _trace("[trace] ReplView.__init__()")
         self.repl = repl
         self._view = view
         self._window = view.window()
@@ -625,7 +571,6 @@ class ReplView:
         view.settings().set("repl_external_id", repl.external_id)
         view.settings().set("repl_id", repl.id)
         view.settings().set("repl", True)
-        # view.settings().set("repl_sublime2", SUBLIME2)
         if repl.allow_restarts():
             view.settings().set("repl_restart_args", repl_restart_args)
 
@@ -672,19 +617,19 @@ class ReplView:
 
     def on_backspace(self):
         """Handle backspace key behavior inside REPL input."""
-        print("[trace] ReplView.on_backspace()")
+        _trace("[trace] ReplView.on_backspace()")
         if self.delta < 0:
             self._view.run_command("left_delete")
 
     def on_ctrl_backspace(self):
         """Handle ctrl+backspace behavior inside REPL input."""
-        print("[trace] ReplView.on_ctrl_backspace()")
+        _trace("[trace] ReplView.on_ctrl_backspace()")
         if self.delta < 0:
             self._view.run_command("delete_word", {"forward": False, "sub_words": True})
 
     def on_left(self):
         """Move cursor left while keeping output area protected."""
-        print("[trace] ReplView.on_left()")
+        _trace("[trace] ReplView.on_left()")
         if self.delta != 0:
             self._window.run_command(
                 "move", {"by": "characters", "forward": False, "extend": False}
@@ -692,7 +637,7 @@ class ReplView:
 
     def on_shift_left(self):
         """Extend selection left while protecting output area."""
-        print("[trace] ReplView.on_shift_left()")
+        _trace("[trace] ReplView.on_shift_left()")
         if self.delta != 0:
             self._window.run_command(
                 "move", {"by": "characters", "forward": False, "extend": True}
@@ -700,7 +645,7 @@ class ReplView:
 
     def on_home(self):
         """Handle home key behavior in REPL input line."""
-        print("[trace] ReplView.on_home()")
+        _trace("[trace] ReplView.on_home()")
         if self.delta > 0:
             self._window.run_command("move_to", {"to": "bol", "extend": False})
         else:
@@ -711,7 +656,7 @@ class ReplView:
 
     def on_shift_home(self):
         """Handle shift+home behavior in REPL input line."""
-        print("[trace] ReplView.on_shift_home()")
+        _trace("[trace] ReplView.on_shift_home()")
         if self.delta > 0:
             self._window.run_command("move_to", {"to": "bol", "extend": True})
         else:
@@ -722,12 +667,12 @@ class ReplView:
 
     def on_selection_modified(self):
         """Toggle read-only mode depending on selection position."""
-        print("[trace] ReplView.on_selection_modified()")
+        _trace("[trace] ReplView.on_selection_modified()")
         self._view.set_read_only(self.delta > 0)
 
     def on_close(self):
         """Close the backend REPL and execute close callbacks."""
-        print("[trace] ReplView.on_close()")
+        _trace("[trace] ReplView.on_close()")
         self.repl.close()
         for fun in self.call_on_close:
             fun(self)
@@ -738,7 +683,7 @@ class ReplView:
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplView.clear()")
+        _trace("[trace] ReplView.clear()")
         self.escape(edit)
         self._view.erase(edit, self.output_region)
         self._output_end = self._view.sel()[0].begin()
@@ -749,14 +694,14 @@ class ReplView:
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplView.escape()")
+        _trace("[trace] ReplView.escape()")
         self._view.set_read_only(False)
         self._view.erase(edit, self.input_region)
         self._view.show(self.input_region)
 
     def enter(self):
         """Submit current input to the REPL backend."""
-        print("[trace] ReplView.enter()")
+        _trace("[trace] ReplView.enter()")
         v = self._view
         if v.sel()[0].begin() != v.size():
             v.sel().clear()
@@ -780,7 +725,7 @@ class ReplView:
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplView.previous_command()")
+        _trace("[trace] ReplView.previous_command()")
         self._view.set_read_only(False)
         self.ensure_history_match()
         self.replace_current_input(edit, self._history_match.prev_command())
@@ -792,7 +737,7 @@ class ReplView:
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplView.next_command()")
+        _trace("[trace] ReplView.next_command()")
         self._view.set_read_only(False)
         self.ensure_history_match()
         self.replace_current_input(edit, self._history_match.next_command())
@@ -804,13 +749,13 @@ class ReplView:
         Args:
             view: New Sublime view instance.
         """
-        print("[trace] ReplView.update_view()")
+        _trace("[trace] ReplView.update_view()")
         if self._view is not view:
             self._view = view
 
     def adjust_end(self):
         """Recalculate output boundary after user input changes."""
-        print("[trace] ReplView.adjust_end()")
+        _trace("[trace] ReplView.adjust_end()")
         if self.repl.suppress_echo:
             v = self._view
             vsize = v.size()
@@ -844,7 +789,7 @@ class ReplView:
         Args:
             unistr: Prompt text.
         """
-        print("[trace] ReplView.write_prompt()")
+        _trace("[trace] ReplView.write_prompt()")
         self._prompt_size = 0
         self.write(unistr)
         self._prompt_size = len(unistr)
@@ -918,18 +863,20 @@ class ReplView:
         Args:
             command: Command text entered by user.
         """
-        print("[trace] ReplView.push_history()")
+        _trace("[trace] ReplView.push_history()")
         self._history.push(command)
         self._history_match = None
 
     def ensure_history_match(self):
         """Ensure history matcher reflects current user input."""
-        print("[trace] ReplView.ensure_history_match()")
+        _trace("[trace] ReplView.ensure_history_match()")
         user_input = self.user_input
-        if self._history_match is not None:
-            if user_input != self._history_match.current_command():
-                # user did something! reset
-                self._history_match = None
+        if (
+            self._history_match is not None
+            and user_input != self._history_match.current_command()
+        ):
+            # user did something! reset
+            self._history_match = None
         if self._history_match is None:
             self._history_match = self._history.match(user_input)
 
@@ -940,7 +887,7 @@ class ReplView:
             edit: Sublime edit token.
             cmd: Replacement command text.
         """
-        print("[trace] ReplView.replace_current_input()")
+        _trace("[trace] ReplView.replace_current_input()")
         if cmd:
             self._view.replace(edit, self.input_region, cmd)
             self._view.sel().clear()
@@ -992,7 +939,7 @@ class ReplManager:
 
     def __init__(self):
         """Initialize REPL view registry."""
-        print("[trace] ReplManager.__init__()")
+        _trace("[trace] ReplManager.__init__()")
         self.repl_views = {}
 
     def repl_view(self, view):
@@ -1004,7 +951,7 @@ class ReplManager:
         Returns:
             ReplView | None: Matched managed view.
         """
-        print("[trace] ReplManager.repl_view()")
+        _trace("[trace] ReplManager.repl_view()")
         repl_id = view.settings().get("repl_id")
         if repl_id not in self.repl_views:
             return None
@@ -1026,7 +973,7 @@ class ReplManager:
         Returns:
             ReplView | None: Created view wrapper or ``None`` on failure.
         """
-        print(f"[trace] ReplManager.open(type={type}, view_id={view_id})")
+        _trace(f"[trace] ReplManager.open(type={type}, view_id={view_id})")
         repl_restart_args = {
             "encoding": encoding,
             "type": type,
@@ -1036,7 +983,7 @@ class ReplManager:
         try:
             kwds = ReplManager.translate(window, kwds)
             encoding = ReplManager.translate(window, encoding)
-            r = Repl.subclass(type)(encoding, **kwds)
+            r = SubprocessRepl(encoding, **kwds)
             found = None
             for view in window.views():
                 if view.id() == view_id:
@@ -1048,7 +995,7 @@ class ReplManager:
             rv.call_on_close.append(self._delete_repl)
             self.repl_views[r.id] = rv
             view.set_scratch(True)
-            view.set_name("*REPL* [%s]" % (r.name(),))
+            view.set_name(f"*REPL* [{r.name()}]")
             return rv
         except Exception as e:
             traceback.print_exc()
@@ -1064,7 +1011,7 @@ class ReplManager:
         Returns:
             bool: Whether restart was triggered.
         """
-        print("[trace] ReplManager.restart()")
+        _trace("[trace] ReplManager.restart()")
         repl_restart_args = view.settings().get("repl_restart_args")
         if not repl_restart_args:
             sublime.message_dialog("No restart parameters found")
@@ -1090,7 +1037,7 @@ class ReplManager:
         Args:
             repl_view: Managed REPL view wrapper.
         """
-        print("[trace] ReplManager._delete_repl()")
+        _trace("[trace] ReplManager._delete_repl()")
         repl_id = repl_view.repl.id
         if repl_id not in self.repl_views:
             return
@@ -1108,13 +1055,13 @@ class ReplManager:
         Returns:
             Any: Translated object.
         """
-        print("[trace] ReplManager.translate()")
+        _trace("[trace] ReplManager.translate()")
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
         if isinstance(obj, dict):
             return ReplManager._translate_dict(window, obj, subst)
-        # if isinstance(obj, unicode_type):  # PY2
-        #     return ReplManager._translate_string(window, obj, subst)
+        if isinstance(obj, str):
+            return ReplManager._translate_string(window, obj, subst)
         if isinstance(obj, list):
             return ReplManager._translate_list(window, obj, subst)
         return obj
@@ -1122,7 +1069,7 @@ class ReplManager:
     @staticmethod
     def _subst_for_translate(window):
         """Return all available substitutions"""
-        print("[trace] ReplManager._subst_for_translate()")
+        _trace("[trace] ReplManager._subst_for_translate()")
         res = {
             "packages": sublime.packages_path(),
             "installed_packages": sublime.installed_packages_path(),
@@ -1157,16 +1104,11 @@ class ReplManager:
         Returns:
             str: Translated string.
         """
-        print("[trace] ReplManager._translate_string()")
+        _trace("[trace] ReplManager._translate_string()")
         from string import Template
 
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
-
-        # # Older Python runtimes can choke on dict(unicode -> unicode) as
-        # # **kwargs, so normalize keys to str when needed.
-        # if PY2:
-        #     subst = dict((str(key), val) for key, val in subst.items())
 
         return Template(string).safe_substitute(**subst)
 
@@ -1182,7 +1124,7 @@ class ReplManager:
         Returns:
             list: Translated list.
         """
-        print("[trace] ReplManager._translate_list()")
+        _trace("[trace] ReplManager._translate_list()")
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
         return [ReplManager.translate(window, x, subst) for x in list]
@@ -1199,7 +1141,7 @@ class ReplManager:
         Returns:
             dict: Translated dictionary.
         """
-        print("[trace] ReplManager._translate_dict()")
+        _trace("[trace] ReplManager._translate_dict()")
         if subst is None:
             subst = ReplManager._subst_for_translate(window)
         for k, v in list(dictionary.items()):
@@ -1226,7 +1168,7 @@ class ReplOpenCommand(sublime_plugin.WindowCommand):
             view_id: Optional existing view id.
             **kwds: Backend arguments.
         """
-        print("[trace] ReplOpenCommand.run()")
+        _trace("[trace] ReplOpenCommand.run()")
         manager.open(self.window, encoding, type, syntax, view_id, **kwds)
 
 
@@ -1239,7 +1181,7 @@ class ReplRestartCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplRestartCommand.run()")
+        _trace("[trace] ReplRestartCommand.run()")
         manager.restart(self.view, edit)
 
     def is_visible(self):
@@ -1266,7 +1208,7 @@ class ReplEnterCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplEnterCommand.run()")
+        _trace("[trace] ReplEnterCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.enter()
@@ -1281,7 +1223,7 @@ class ReplClearCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplClearCommand.run()")
+        _trace("[trace] ReplClearCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.clear(edit)
@@ -1297,7 +1239,7 @@ class ReplEscapeCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplEscapeCommand.run()")
+        _trace("[trace] ReplEscapeCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.escape(edit)
@@ -1312,7 +1254,7 @@ class ReplBackspaceCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplBackspaceCommand.run()")
+        _trace("[trace] ReplBackspaceCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_backspace()
@@ -1327,7 +1269,7 @@ class ReplCtrlBackspaceCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplCtrlBackspaceCommand.run()")
+        _trace("[trace] ReplCtrlBackspaceCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_ctrl_backspace()
@@ -1342,7 +1284,7 @@ class ReplLeftCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplLeftCommand.run()")
+        _trace("[trace] ReplLeftCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_left()
@@ -1357,7 +1299,7 @@ class ReplShiftLeftCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplShiftLeftCommand.run()")
+        _trace("[trace] ReplShiftLeftCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_shift_left()
@@ -1372,7 +1314,7 @@ class ReplHomeCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplHomeCommand.run()")
+        _trace("[trace] ReplHomeCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_home()
@@ -1387,7 +1329,7 @@ class ReplShiftHomeCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplShiftHomeCommand.run()")
+        _trace("[trace] ReplShiftHomeCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.on_shift_home()
@@ -1402,7 +1344,7 @@ class ReplViewPreviousCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplViewPreviousCommand.run()")
+        _trace("[trace] ReplViewPreviousCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.previous_command(edit)
@@ -1417,7 +1359,7 @@ class ReplViewNextCommand(sublime_plugin.TextCommand):
         Args:
             edit: Sublime edit token.
         """
-        print("[trace] ReplViewNextCommand.run()")
+        _trace("[trace] ReplViewNextCommand.run()")
         rv = manager.repl_view(self.view)
         if rv:
             rv.next_command(edit)
@@ -1442,7 +1384,7 @@ class SublimeReplListener(sublime_plugin.EventListener):
         Args:
             view: Closed Sublime view.
         """
-        print("[trace] SublimeReplListener.on_close()")
+        _trace("[trace] SublimeReplListener.on_close()")
         rv = manager.repl_view(view)
         if rv:
             rv.on_close()
@@ -1463,15 +1405,17 @@ class SublimeReplListener(sublime_plugin.EventListener):
         if not rv:
             return None
 
-        if command_name == "left_delete":
-            # stop backspace on ST3 w/o breaking brackets
-            if not rv.allow_deletion():
-                return "repl_pass", {}
+        # stop backspace on ST3 w/o breaking brackets
+        if command_name == "left_delete" and not rv.allow_deletion():
+            return "repl_pass", {}
 
-        if command_name == "delete_word" and not args.get("forward"):
-            # stop ctrl+backspace on ST3 w/o breaking brackets
-            if not rv.allow_deletion():
-                return "repl_pass", {}
+        # stop ctrl+backspace on ST3 w/o breaking brackets
+        if (
+            command_name == "delete_word"
+            and not args.get("forward")
+            and not rv.allow_deletion()
+        ):
+            return "repl_pass", {}
 
         return None
 
@@ -1487,7 +1431,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
             interactive: Whether to open interactive mode.
             name: External REPL identifier shown in tab naming.
         """
-        print(
+        _trace(
             f"[trace] RunPythonReplCommand.run(interactive={interactive}, name={name})"
         )
         window = self.view.window()
@@ -1514,7 +1458,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
         Returns:
             str: Executable Python path.
         """
-        print(f"[trace] RunPythonReplCommand.get_venv_python(start_path={start_path})")
+        _trace(f"[trace] RunPythonReplCommand.get_venv_python(start_path={start_path})")
         fallback_python = sys.executable or "python3"
         if not start_path:
             return fallback_python
@@ -1540,7 +1484,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
             name: External REPL identifier.
             file_name: Current file path or ``None``.
         """
-        print("[trace] RunPythonReplCommand.repl_open()")
+        _trace("[trace] RunPythonReplCommand.repl_open()")
         self.view.window().run_command(
             "repl_open",
             {
