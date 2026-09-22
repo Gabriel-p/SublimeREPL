@@ -291,6 +291,14 @@ class SubprocessRepl(Repl):
         getenv_command = settings.get("getenv_command")
         if getenv_command:
             try:
+                if not (
+                    isinstance(getenv_command, (list, tuple))
+                    and getenv_command
+                    and all(isinstance(part, str) for part in getenv_command)
+                ):
+                    raise ValueError(
+                        "'getenv_command' must be a non-empty string list/tuple."
+                    )
                 output = subprocess.check_output(getenv_command)
                 lines = output.decode("utf-8", errors="replace").splitlines()
                 env = dict(line.split("=", 1) for line in lines)
@@ -378,9 +386,15 @@ class SubprocessRepl(Repl):
             return None
         out = self.popen.stdout
         while True:
-            i, _, _ = select.select([out], [], [])
+            i, _, _ = select.select([out], [], [], 0.1)
             if i:
-                return out.read(4096)
+                data = out.read(4096)
+                if data:
+                    return data
+                if self.popen.poll() is not None:
+                    return None
+            elif self.popen.poll() is not None:
+                return None
 
     def write_bytes(self, bytes):
         """Write bytes to subprocess stdin.
