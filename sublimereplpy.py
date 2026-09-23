@@ -476,13 +476,14 @@ class MemHistory(History):
 class ReplView:
     """Wrap a Sublime view and connect it to a running REPL."""
 
-    def __init__(self, view, repl, repl_restart_args):
+    def __init__(self, view, repl, repl_restart_args, banner=None):
         """Initialize a REPL view bridge.
 
         Args:
             view: Sublime view used for REPL IO.
             repl: REPL backend instance.
             repl_restart_args: Serialized restart arguments.
+            banner: Optional text written before any REPL output.
         """
         self.repl = repl
         self._view = view
@@ -494,6 +495,9 @@ class ReplView:
         view.set_syntax_file(SYNTAX_FILE)
         self._output_end = view.size()
         self._prompt_size = 0
+
+        if banner:
+            self.write(banner)
 
         self._repl_reader = ReplReader(repl)
         self._repl_reader.start()
@@ -877,7 +881,7 @@ class ReplManager:
                     break
             view = found or window.new_file()
 
-            rv = ReplView(view, r, repl_restart_args)
+            rv = ReplView(view, r, repl_restart_args, banner=banner)
             rv.call_on_close.append(self._delete_repl)
             self.repl_views[r.id] = rv
             view.set_scratch(True)
@@ -886,8 +890,6 @@ class ReplManager:
                 view.set_name("REPL >>")
             else:
                 view.set_name("REPL")
-            if banner:
-                rv.write(banner)
             return rv
         except Exception as e:
             traceback.print_exc()
