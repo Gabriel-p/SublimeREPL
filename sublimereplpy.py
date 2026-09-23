@@ -843,7 +843,10 @@ class ReplManager:
 
         Args:
             window: Sublime window where REPL opens.
-            **kwds: Backend-specific keyword arguments.
+            **kwds: Backend-specific keyword arguments. An optional
+                ``banner`` string may be included; it is not forwarded to
+                the subprocess backend and is instead written to the top
+                of the REPL view once it is created.
 
         Returns:
             ReplView | None: Created view wrapper or ``None`` on failure.
@@ -852,6 +855,10 @@ class ReplManager:
             "syntax": SYNTAX_FILE,
         }
         repl_restart_args.update(kwds)
+        # 'banner' is UI-only metadata: pull it out before it reaches the
+        # subprocess backend, but keep it in the restart args so restarts
+        # show the same banner again.
+        banner = kwds.pop("banner", None)
         try:
             kwds = ReplManager.translate(window, kwds)
             r = SubprocessRepl(**kwds)
@@ -871,6 +878,8 @@ class ReplManager:
                 view.set_name("REPL >>")
             else:
                 view.set_name("REPL")
+            if banner:
+                rv.write(banner)
             return rv
         except Exception as e:
             traceback.print_exc()
@@ -1287,7 +1296,8 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
                 view.run_command("save")
 
         file_name = self.view.file_name()
-        python_path = self.get_venv_python(file_name)
+        settings = sublime.load_settings(SETTINGS_FILE)
+        python_path, source = self.resolve_python(settings, file_name)
 
         # Command list passed to subprocess backend.
         if not interactive and file_name:
@@ -1298,13 +1308,47 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
         # Working directory for REPL process
         cwd = os.path.dirname(file_name) if file_name else os.path.expanduser("~")
 
+        banner = "*** Using Python interpreter ({}): {} ***\n".format(source, python_path)
+
         self.view.window().run_command(
             "repl_open",
             {
                 "cmd": cmd_list,
                 "cwd": cwd,
+                "banner": banner,
             },
         )
+
+    def resolve_python(self, settings, file_name):
+        """Resolve the Python interpreter to launch, honoring user overrides.
+
+        The ``python_venv_path`` setting, when it points to an existing,
+        executable file, takes precedence over the automatic upward search
+        for a ``.venv/bin/python`` performed by :meth:`get_venv_python`.
+
+        Args:
+            settings: Loaded SublimeREPL-py settings object.
+            file_name: Current file path, used for the automatic search.
+
+        Returns:
+            tuple[str, str]: Resolved python executable path, and a short
+            string describing where it came from ("python_venv_path" or
+            "auto-detected").
+        """
+        configured_path = settings.get("python_venv_path")
+        if configured_path:
+            configured_path = os.path.expanduser(str(configured_path))
+            if os.path.isfile(configured_path) and os.access(
+                configured_path, os.X_OK
+            ):
+                return configured_path, "python_venv_path setting"
+            sublime.error_message(
+                "SublimeREPL-py: 'python_venv_path' is set to '{}' but that "
+                "file does not exist or is not executable.\nFalling back to "
+                "auto-detected interpreter.".format(configured_path)
+            )
+
+        return self.get_venv_python(file_name), "auto-detected"
 
     def get_venv_python(self, start_path):
         """Find nearest ``.venv/bin/python`` searching upward.
