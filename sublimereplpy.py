@@ -20,6 +20,13 @@ SETTINGS_FILE = "SublimeREPL-py.sublime-settings"
 SYNTAX_FILE = "Packages/Python/Python.sublime-syntax"
 ENCODING = "utf8"
 
+# On POSIX system SublimeText launched from GUI does not inherit
+# a proper environment. Often leading to problems with finding interpreters
+# or not using the ones affected by changes in ~/.profile / *rc files
+# This command is used as a workaround, it's launched before any subprocess
+# repl starts and it's output is parsed as an environment
+GETENV_COMMAND = ["/bin/bash", "--login", "-c", "env"]
+
 
 class Repl:
     """Represent a running REPL process abstraction."""
@@ -185,8 +192,9 @@ class SubprocessRepl(Repl):
         Returns:
             dict: Environment mapping.
         """
-        getenv_command = settings.get("getenv_command")
-        output = subprocess.check_output(getenv_command)
+        # getenv_command = settings.get("getenv_command")
+
+        output = subprocess.check_output(GETENV_COMMAND)
         lines = output.decode(ENCODING, errors="replace").splitlines()
         env = dict(line.split("=", 1) for line in lines)
         return env
@@ -620,7 +628,7 @@ class ReplView:
             v.sel().clear()
             v.sel().add(sublime.Region(v.size()))
 
-        l = self._output_end
+        # l = self._output_end
 
         self.push_history(self.user_input)  # don't include cmd_postfix in history
         v.run_command("insert", {"characters": cmd_postfix})
@@ -1308,7 +1316,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
         # Working directory for REPL process
         cwd = os.path.dirname(file_name) if file_name else os.path.expanduser("~")
 
-        banner = "*** Using Python interpreter ({}): {} ***\n".format(source, python_path)
+        banner = f"*** Using Python interpreter ({source}): {python_path} ***\n"
 
         self.view.window().run_command(
             "repl_open",
@@ -1337,15 +1345,19 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
         """
         configured_path = settings.get("python_venv_path")
         if configured_path:
-            configured_path = os.path.expanduser(str(configured_path))
-            if os.path.isfile(configured_path) and os.access(
-                configured_path, os.X_OK
-            ):
+            # If the user has set a custom python_venv_path, we need to check if it
+            # exists and is executable.
+            configured_path = os.path.join(
+                os.path.expanduser(str(configured_path)),
+                "bin",
+                "python",
+            )
+            if os.path.isfile(configured_path) and os.access(configured_path, os.X_OK):
                 return configured_path, "python_venv_path setting"
             sublime.error_message(
-                "SublimeREPL-py: 'python_venv_path' is set to '{}' but that "
+                f"SublimeREPL-py: 'python_venv_path' is set to '{configured_path}' but that "
                 "file does not exist or is not executable.\nFalling back to "
-                "auto-detected interpreter.".format(configured_path)
+                "auto-detected interpreter."
             )
 
         return self.get_venv_python(file_name), "auto-detected"
