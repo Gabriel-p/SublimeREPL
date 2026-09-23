@@ -496,9 +496,6 @@ class ReplView:
         self._output_end = view.size()
         self._prompt_size = 0
 
-        if banner:
-            self.write(banner)
-
         self._repl_reader = ReplReader(repl)
         self._repl_reader.start()
 
@@ -520,6 +517,9 @@ class ReplView:
         self._history_match = None
 
         self._filter_color_codes = settings.get("filter_ascii_color_codes")
+
+        if banner:
+            self.write(banner)
 
         # optionally move view to a different group
         # find current position of this replview
@@ -1318,7 +1318,7 @@ class RunPythonReplCommand(sublime_plugin.TextCommand):
         # Working directory for REPL process
         cwd = os.path.dirname(file_name) if file_name else os.path.expanduser("~")
 
-        banner = f"*** Using Python interpreter ({source}): {python_path} ***\n"
+        banner = f"[Python interpreter ({source}): {python_path}]\n\n"
 
         self.view.window().run_command(
             "repl_open",
