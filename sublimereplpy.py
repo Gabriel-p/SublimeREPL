@@ -130,15 +130,10 @@ class SubprocessRepl(Repl):
             **kwds: Forwarded REPL base arguments.
         """
         super().__init__(**kwds)
-        settings = sublime.load_settings(SETTINGS_FILE)
-
-        # if not cmd:
-        #     raise Unsupported(["SublimeREPL-py subprocess backend requires a command."])
-        # if cmd[0] == "[unsupported]":
-        #     raise Unsupported(cmd[1:])
+        # settings = sublime.load_settings(SETTINGS_FILE)
 
         # env = self.env(settings)
-        env = self.getenv(settings)
+        env = self.getenv()
 
         self._cmd = cmd  # self.cmd(cmd, env)
         self._soft_quit = soft_quit
@@ -157,37 +152,8 @@ class SubprocessRepl(Repl):
         flags = fcntl.fcntl(self.popen.stdout, fcntl.F_GETFL)
         fcntl.fcntl(self.popen.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-    # def cmd(self, cmd, env):
-    #     """Return command list before process launch.
-
-    #     Args:
-    #         cmd: Original command list.
-    #         env: Prepared process environment.
-
-    #     Returns:
-    #         list | str: Command passed to ``subprocess.Popen``.
-    #     """
-    #     return cmd
-
-    # def cwd(self, cwd, settings):
-    #     """Resolve subprocess working directory.
-
-    #     Args:
-    #         cwd: Candidate current working directory.
-    #         settings: Sublime settings object.
-
-    #     Returns:
-    #         str | None: Existing path, or ``None`` to use default behavior.
-    #     """
-    #     if cwd and os.path.exists(cwd):
-    #         return cwd
-    #     return None
-
-    def getenv(self, settings):
+    def getenv(self):
         """Load a shell-like environment for subprocesses.
-
-        Args:
-            settings: Sublime settings object.
 
         Returns:
             dict: Environment mapping.
