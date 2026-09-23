@@ -5,6 +5,15 @@
 	// once "PATH": "{PATH}:/home/username/mylocalinstalls/bin" or whatever
 	"default_extend_env": {},
 
+	// Absolute path to a specific ".venv/bin/python" (or any python
+	// interpreter) that should be used to launch Python REPLs/scripts.
+	// When set to a non-empty string pointing at an existing, executable
+	// file, this takes precedence over the automatic upward search for a
+	// ".venv/bin/python" performed by "run_python_repl". Leave empty ("")
+	// to keep using the automatic search.
+	// Example: "/home/username/myproject/.venv/bin/python"
+	"python_venv_path": "",
+
 	// Specify whether to move repls to a different Sublime Text group (frame)
 	// immediately on opening. Setting this to true will simply move it to
 	// the 'next' group from the one that was in focus when it was opened
